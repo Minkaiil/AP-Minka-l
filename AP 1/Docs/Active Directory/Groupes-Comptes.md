@@ -50,7 +50,7 @@ Il peut être relancé sans risque : il ne crée que ce qui manque et ne supprim
 
 ## 3. Exécution
 
-J'ai copié le script sur `DC01` avec le presse-papiers de la console noVNC et je l'ai exécuté en PowerShell administrateur,.
+J'ai copié le script sur `DC01` avec le presse-papiers de la console noVNC et je l'ai exécuté en PowerShell administrateur.
 
 À la fin, le script affiche le tableau des comptes de l'OU `Utilisateurs`, triés par service : 30 comptes, un `Responsable` et deux `Collaborateur` par service.
 
