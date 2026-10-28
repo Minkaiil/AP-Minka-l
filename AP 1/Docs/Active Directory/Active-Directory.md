@@ -1,103 +1,117 @@
-# Active Directory - AP 1 Minkail
+# Active Directory et DNS - domaine redone.local
 
-Je présente ici la mise en place de mon contrôleur de domaine, avec mes propres captures d'écran.
+| | |
+| --- | --- |
+| **Chantier** | 2 sur 9 |
+| **Objectif** | Transformer `DC01` en premier contrôleur du domaine `redone.local`, avec le DNS |
+| **Prérequis** | [Serveur DC01](../Serveur/Serveur.md) : serveur nommé, IP fixe, réseau fonctionnel |
+| **Résultat** | Domaine opérationnel, ouverture de session `REDONE\Administrateur`, DNS qui résout le domaine |
+| **Suite** | [Structure d'OU](Structure-OU.md) |
 
-## 1. Créer la machine virtuelle
-
-J'ai créé une VM sur **Proxmox** (nœud `pve`) avec le **VMID 600** et le nom **SRV-AD-Minkail**. Elle dispose de [NOMBRE_VCPU] vCPU, [RAM_GIO] Gio de RAM et [TAILLE_DISQUE_GIO] Gio de stockage sur le volume **Raid5-VMs**. Sa carte réseau est reliée à [BRIDGE] sur le **VLAN 600**. J'y ai installé **Windows Server 2022 Standard** (version d'évaluation de 180 jours).
-
-Mon pool contient trois machines : le contrôleur de domaine (600), un poste utilisateur Windows 11 (605, `VM-USER`) et un serveur Debian (610, `VM-Debian`).
-
-![VM du contrôleur de domaine dans Proxmox](images/01-vm-proxmox.png)
-
-## 2. Configurer le nom et le réseau
-
-J'ai configuré une adresse IP fixe sur le serveur :
+## 1. Valeurs retenues
 
 | Paramètre | Valeur |
 | --- | --- |
-| Adresse IP | 10.2.81.2 |
-| Masque | 255.255.255.0 (/24) |
-| Passerelle | 10.2.81.1 |
-| DNS préféré | 127.0.0.1 (le serveur lui-même) |
-| DNS auxiliaire | 8.8.8.8 |
+| Domaine (forêt et domaine racine) | `redone.local` |
+| Nom NetBIOS | `REDONE` |
+| Contrôleur de domaine | `DC01` (`DC01.redone.local`), 10.2.81.2 |
+| Niveau fonctionnel | Windows Server 2016 (forêt et domaine) |
+| Rôles du contrôleur | Serveur DNS et catalogue global |
+| Type de déploiement | Nouvelle forêt |
 
-**Pourquoi ces choix :** un contrôleur de domaine doit avoir une IP fixe, car tous les clients en dépendent. Le DNS préféré pointe sur lui-même parce que le rôle DNS est installé sur le serveur et que l'annuaire s'appuie sur ses enregistrements SRV. Le DNS auxiliaire 8.8.8.8 permet de résoudre les noms Internet ; une alternative plus propre est de configurer des redirecteurs dans le DNS du serveur.
+## 2. Installer le rôle AD DS
 
-![Configuration IP du serveur](images/02-configuration-ip.png)
+Dans le Gestionnaire de serveur, *Gérer > Ajouter des rôles et fonctionnalités*, j'ai sélectionné le rôle **Services AD DS**. L'assistant propose d'ajouter les fonctionnalités requises : gestion de stratégie de groupe, outils d'administration (module Active Directory pour PowerShell, centre d'administration Active Directory).
 
-## 3. Installer AD DS et DNS
+![Fonctionnalités requises pour AD DS](images/01-ajout-fonctionnalites.png)
 
-J'ai installé les rôles **AD DS** et **DNS** avec le Gestionnaire de serveur, puis promu le serveur comme premier contrôleur du domaine **[DOMAINE_AD]**. Le nom NetBIOS est **[NOM_NETBIOS]**.
+![Sélection du rôle Services AD DS](images/02-selection-role-adds.png)
 
-[CAPTURE_03 : installation des rôles]
+Le rôle **Serveur DNS** n'est pas coché ici : il est installé pendant la promotion, grâce à la case « Serveur DNS » de l'assistant.
 
-[CAPTURE_04 : nom du domaine Active Directory]
+L'installation se termine avec le message « Installation réussie sur DC01 » et le lien **Promouvoir ce serveur en contrôleur de domaine**.
 
-## 4. Créer les OU, groupes et comptes
+![Installation du rôle réussie](images/03-installation-reussie.png)
 
-J'ai placé cinq OU principales directement sous **[DOMAINE_AD]** : Administration, Groupes, Postes, Serveurs et Utilisateurs. Les services se trouvent dans l'OU **Utilisateurs**, chacun avec sa propre sous-OU.
+## 3. Promouvoir le serveur en contrôleur de domaine
 
-L'entreprise compte 10 services, chacun avec **un groupe de sécurité global `GG_<service>`** et **3 comptes**, soit 10 groupes et 30 comptes.
-
-| Service (AD) | Service (contexte) |
+| Écran de l'assistant | Choix |
 | --- | --- |
-| Reseau-Systeme | Réseau & Système |
-| Direction-DSI | Direction / DSI |
-| RH-Compta-Juridique | RH / Compta / Juridique / Secrétariat administratif |
-| Communication-Redaction | Communication / Rédaction |
-| Developpement | Développement |
-| Commercial | Commercial |
-| Labo-Recherche | Labo-Recherche |
-| Accueil | Accueil |
-| Visiteurs | Visiteurs |
-| Demonstration | Démonstration |
+| Configuration de déploiement | **Ajouter une nouvelle forêt**, domaine racine `redone.local` |
+| Options du contrôleur de domaine | Niveau fonctionnel Windows Server 2016, **Serveur DNS** et **Catalogue global** cochés, contrôleur en lecture seule (RODC) non coché, mot de passe DSRM défini |
+| Options supplémentaires | Nom NetBIOS `REDONE` |
+| Options DNS, chemins d'accès, examen, installation | Valeurs par défaut (écrans non capturés, le serveur redémarre à la fin) |
 
-Les noms n'ont ni espace, ni accent, ni `/` ou `&`, car ces caractères posent problème dans les noms de groupes (`sAMAccountName`) et dans les scripts. Les zones « Serveurs » et « Sortie » de la liste du contexte ne sont pas des services avec des utilisateurs : « Serveurs » correspond à l'OU `Serveurs`, et « Sortie » à la zone réseau vers l'extérieur (voir l'[architecture du réseau](../../../Architecture%20du%20r%C3%A9seau/Architecture-du-reseau.md)).
+![Nouvelle forêt redone.local](images/04-nouvelle-foret.png)
 
-**Pourquoi des groupes par service :** je donne les droits (partages TrueNAS, GLPI) aux groupes et non aux comptes. Quand une personne change de service, je la déplace de groupe sans toucher aux permissions (principe AGDLP simplifié).
+![Options du contrôleur de domaine](images/05-options-controleur.png)
 
-[CAPTURE_05 : arborescence des OU]
+![Nom NetBIOS](images/06-nom-netbios.png)
 
-[CAPTURE_06 : groupes de sécurité]
+- **Nouvelle forêt** : c'est le premier domaine de l'entreprise, il n'y a pas de domaine existant à rejoindre.
+- **Niveau fonctionnel 2016** : c'est le niveau proposé par défaut, le plus élevé disponible sur Windows Server 2022.
+- **Catalogue global** : obligatoire sur le premier contrôleur de la forêt.
+- **Pas de RODC** : un contrôleur en lecture seule sert aux sites distants, ce qui n'est pas le cas ici.
+- **Mot de passe DSRM** : il protège le mode de restauration des services d'annuaire. Je le conserve dans un gestionnaire de mots de passe et je ne le publie jamais.
 
-[CAPTURE_07 : comptes utilisateurs]
+## 4. Vérifier le domaine
 
-## 5. Script de création en production
+Après le redémarrage, l'écran de connexion propose le compte de domaine **`REDONE\Administrateur`** : le domaine existe.
 
-Pour créer les objets de façon reproductible plutôt qu'à la main, j'utilise le [script PowerShell](Creer-AD-Template.ps1) avec les fichiers [services.csv](services.csv) et [utilisateurs.csv](utilisateurs.csv).
+![Écran de connexion REDONE\Administrateur](images/07-connexion-domaine.png)
 
-Ce que fait le script :
+Le Gestionnaire de serveur affiche le nom `DC01`, le domaine `redone.local` et l'adresse 10.2.81.2.
 
-1. Il vérifie qu'il tourne sur le bon domaine (`$DomaineAttendu`).
-2. Il contrôle les CSV : pas de champ vide entre crochets, pas de doublon, exactement 3 personnes par service.
-3. Il demande le mot de passe initial au lancement, sans l'écrire dans le dépôt.
-4. Il crée les OU, les groupes `GG_<service>` et les comptes **manquants**, puis ajoute chaque compte à son groupe.
-5. Il **ne supprime jamais** d'objet existant et peut donc être relancé sans risque.
+![Gestionnaire de serveur : DC01 dans redone.local](images/08-gestionnaire-serveur.png)
 
-Les noms et prénoms des 30 comptes de `utilisateurs.csv` sont fictifs.
-
-Pour l'exécuter, je me place sur le contrôleur de domaine dans PowerShell en administrateur, après avoir remplacé `[DOMAINE_AD]` dans le script :
+La commande `Get-ADDomainController` confirme le rôle du serveur :
 
 ```powershell
-cd "C:\Scripts\AD"
-.\Creer-AD-Template.ps1
+Get-ADDomainController
 ```
 
-[CAPTURE_08 : exécution du script]
+![Résultat de Get-ADDomainController](images/09-get-addomaincontroller.png)
 
-## 6. Vérifier le fonctionnement
+| Champ | Valeur | Signification |
+| --- | --- | --- |
+| `HostName` | `DC01.redone.local` | Nom complet du contrôleur |
+| `Domain` et `Forest` | `redone.local` | Domaine et forêt |
+| `IPv4Address` | 10.2.81.2 | Adresse du contrôleur |
+| `IsGlobalCatalog` | True | Il porte le catalogue global |
+| `IsReadOnly` | False | Contrôleur en lecture et écriture |
+| `LdapPort` et `SslPort` | 389 et 636 | LDAP et LDAPS |
+| `OperationMasterRoles` | `SchemaMaster`, `DomainNamingMaster`, `PDCEmulator`, `RIDMaster`... | Rôles FSMO, tous portés par le premier contrôleur (la capture tronque la liste) |
+| `Site` | `Default-First-Site-Name` | Site Active Directory par défaut |
 
-J'ai contrôlé le nom du serveur, l'adressage, la résolution DNS et l'état du domaine avec les commandes suivantes :
+## 5. Vérifier la résolution DNS
 
 ```powershell
-hostname
-ipconfig /all
-Get-ADDomain
-Resolve-DnsName [DOMAINE_AD]
-dcdiag /q
+nslookup redone.local
 ```
 
-J'ai ensuite joint le poste **VM-USER** (Windows 11) au domaine et ouvert une session avec un compte de test.
+![Résolution de redone.local](images/10-nslookup.png)
 
-[CAPTURE_09 : résultats des tests]
+`redone.local` se résout en `10.2.81.2`. La ligne « Serveur : UnKnown » est normale : `nslookup` cherche le nom du serveur DNS par une requête inverse, et je n'ai pas encore créé de zone de recherche inversée.
+
+## 6. Configurer le DNS
+
+Dans le Gestionnaire DNS, propriétés de `DC01`, onglet **Redirecteurs**, j'ai ajouté `8.8.8.8`. Le serveur résout ainsi lui-même les noms d'Internet pour le compte des clients, au lieu de les envoyer vers un DNS externe qui ne connaît pas `redone.local`.
+
+![Redirecteur DNS 8.8.8.8](images/11-redirecteur-dns.png)
+
+Le message « Résolution impossible » dans la colonne du nom complet est normal : il vient de la même absence de zone inverse.
+
+## 7. Sauvegarde
+
+Je prends un **snapshot Proxmox** nommé `apres-chantier2`, sans la RAM : domaine créé, DNS opérationnel.
+
+## 8. Questions pour l'oral
+
+- **Quelle différence entre une forêt, un domaine et un contrôleur de domaine ?** Une forêt regroupe des domaines qui partagent un schéma et une configuration, un domaine est une limite d'administration, et un contrôleur de domaine est un serveur qui porte l'annuaire et authentifie.
+- **À quoi sert le catalogue global ?** Il contient une copie partielle de tous les objets de la forêt, ce qui permet de les rechercher et d'ouvrir une session.
+- **Pourquoi les enregistrements SRV du DNS sont-ils indispensables ?** Les clients s'en servent pour trouver les contrôleurs de domaine et les services de l'annuaire.
+- **Pourquoi un redirecteur plutôt que 8.8.8.8 en DNS auxiliaire ?** Un DNS externe ne connaît pas `redone.local` : si un client l'interroge pour le domaine, il reçoit des erreurs. Le redirecteur laisse le serveur du domaine répondre seul.
+- **Que sont les rôles FSMO ?** Cinq rôles à instance unique (maître de schéma, maître des noms de domaine, émulateur PDC, maître RID, maître d'infrastructure), tous portés ici par `DC01`.
+- **À quoi sert le mot de passe DSRM ?** À ouvrir le mode de restauration des services d'annuaire pour réparer ou restaurer l'annuaire.
+
+Suite : [Structure d'OU](Structure-OU.md).
