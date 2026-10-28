@@ -23,7 +23,7 @@ Mettre en place sur **Proxmox** :
 | 2 | AD DS et DNS, domaine `redone.local` | [Active Directory](Docs/Active%20Directory/Active-Directory.md) | Réalisé |
 | 3 | Structure d'OU | [Structure d'OU](Docs/Active%20Directory/Structure-OU.md) | Réalisé |
 | 4 | Groupes et comptes utilisateurs | [Groupes et comptes](Docs/Active%20Directory/Groupes-Comptes.md) | Réalisé |
-| 5 | Poste Windows 11, jonction au domaine | [Poste client](Docs/Client/Client-Windows11.md) | En cours |
+| 5 | Poste Windows 11, jonction au domaine | [Poste client](Docs/Client/Client-Windows11.md) | Réalisé |
 | 6 | DHCP | à venir | Reporté |
 | 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | À venir |
 | 8 | GLPI | [GLPI](Docs/GLPI/GLPI.md) | À venir |

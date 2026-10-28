@@ -92,8 +92,6 @@ Après le redémarrage, l'écran de connexion propose un compte du domaine, `RED
 
 ![Écran de connexion du domaine](images/08-ecran-connexion.png)
 
-> **Capture à ajouter :** une session ouverte avec un compte du domaine (`whoami` dans une invite de commandes doit afficher `redone\adavid`), et le message de réussite de la jonction.
-
 ## 8. Questions pour l'oral
 
 - **Pourquoi une IP fixe sur le client ?** Il n'y a pas de DHCP dans ce laboratoire ; le client doit connaître son adresse, sa passerelle et son DNS.

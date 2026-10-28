@@ -24,7 +24,7 @@
 | --- | --- | --- | --- | --- |
 | `DC01` | 10.2.81.2/24 | 600 | Contrôleur de domaine, DNS | Réalisé |
 | `DC02` | à définir | 600 | Second contrôleur de domaine | À venir |
-| `CLIENT01` | 10.2.81.10 | 600 | Poste Windows 11 | En cours |
+| `CLIENT01` | 10.2.81.10 | 600 | Poste Windows 11 | Réalisé |
 | `SRV-GLPI` | à définir | 600 | GLPI (Debian) | À venir |
 
 ## Zones de RedOne et plan d'adressage prévu
