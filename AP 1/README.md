@@ -1,38 +1,36 @@
-# AP 1 - Services d'infrastructure autour d'Active Directory
+# AP 1 - Active Directory et services d'infrastructure
 
 ## Contexte
 
-Mon projet consiste à construire l'infrastructure système d'une entreprise fictive de [NOMBRE_EMPLOYÉS] personnes, organisée en 10 services : Réseau & Système, Direction / DSI, RH / Compta / Juridique / Secrétariat administratif, Communication / Rédaction, Développement, Commercial, Labo-Recherche, Accueil, Visiteurs et Démonstration. Je m'appuie sur [LIEN_OU_NOM_DU_DOSSIER_DE_CONTEXTE] pour définir le périmètre de l'AP 1.
+Je construis l'infrastructure système de **RedOne**, un laboratoire pharmaceutique dont le siège parisien compte plus de 350 postes et plus de 100 serveurs virtuels (d'après le document de contexte). Le réseau y est segmenté en VLAN par service : Réseau & Système, Direction / DSI, RH / Compta / Juridique / Secrétariat administratif, Communication / Rédaction, Développement, Commercial, Labo-Recherche, Accueil, Visiteurs et Démonstration, plus les zones Serveurs et Sortie.
 
 ## Objectif
 
-Je mets en place sur **Proxmox** :
+Mettre en place sur **Proxmox** :
 
-- un contrôleur de domaine **Active Directory** avec DNS (VM 600) ;
-- un **script PowerShell** qui crée les OU, groupes et comptes en production à partir de fichiers CSV ;
+- un contrôleur de domaine **Active Directory** avec DNS pour le domaine `redone.local` ;
+- une structure d'**OU**, des groupes et des comptes par service, créés par scripts PowerShell ;
+- un poste **Windows 11** joint au domaine ;
 - un second contrôleur de domaine (**AD secondaire**) pour la tolérance de panne ;
-- un serveur de gestion de parc et de tickets **GLPI** (VM Debian) ;
-- un serveur de fichiers **TrueNAS** intégré au domaine.
+- un serveur de gestion de parc et de tickets **GLPI**, relié à l'annuaire ;
+- un serveur de fichiers **TrueNAS** avec des droits par groupe.
 
-## Documentation
+## Chantiers
 
-| Sujet | Description |
-| --- | --- |
-| [Architecture du réseau](../Architecture%20du%20r%C3%A9seau/Architecture-du-reseau.md) | VLAN, adressage et flux |
-| [Active Directory](Docs/Active%20Directory/Active-Directory.md) | VM, domaine, OU, groupes, comptes et script |
-| [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | Second contrôleur de domaine et réplication |
-| [GLPI](Docs/GLPI/GLPI.md) | Installation et liaison avec l'annuaire |
-| [TrueNAS](Docs/TrueNAS/TrueNAS.md) | Stockage, partages et droits par groupe |
+| # | Chantier | Page | État |
+| --- | --- | --- | --- |
+| 1 | VM DC01, Windows Server 2022, réseau | [Serveur](Docs/Serveur/Serveur.md) | Réalisé |
+| 2 | AD DS et DNS, domaine `redone.local` | [Active Directory](Docs/Active%20Directory/Active-Directory.md) | Réalisé |
+| 3 | Structure d'OU | [Structure d'OU](Docs/Active%20Directory/Structure-OU.md) | Réalisé |
+| 4 | Groupes et comptes utilisateurs | à venir | À venir |
+| 5 | Poste Windows 11, jonction au domaine | à venir | À venir |
+| 6 | DHCP | à venir | Reporté |
+| 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | À venir |
+| 8 | GLPI | [GLPI](Docs/GLPI/GLPI.md) | À venir |
+| 9 | TrueNAS | [TrueNAS](Docs/TrueNAS/TrueNAS.md) | À venir |
 
-## Avancement
+Le réseau et l'adressage sont décrits dans [Architecture du réseau](../Architecture-du-reseau/Architecture-du-reseau.md).
 
-| Chantier | État |
-| --- | --- |
-| VM du contrôleur de domaine, IP, AD DS + DNS | Réalisé |
-| OU, groupes et comptes par service | Réalisé (à documenter avec les captures) |
-| Script de création d'utilisateurs | Modèle fourni, à tester |
-| AD secondaire | À réaliser |
-| GLPI | À réaliser |
-| TrueNAS | À réaliser |
+## Méthode
 
-Je mets ce tableau à jour au fur et à mesure et je ne passe un chantier à « Réalisé » qu'après l'avoir testé.
+Chaque chantier suit la même démarche : je réalise l'étape sur Proxmox, je prends mes captures au fil de l'eau, je vérifie le résultat par un test, puis je pose un snapshot Proxmox (sans la RAM) pour pouvoir revenir à cet état. La documentation permet de refaire l'AP de zéro à tout moment.

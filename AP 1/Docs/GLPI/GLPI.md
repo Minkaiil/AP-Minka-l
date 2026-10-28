@@ -10,10 +10,10 @@ Déployer **GLPI** pour gérer le parc informatique et les tickets d'incident de
 
 | Élément | Valeur |
 | --- | --- |
-| Serveur | VM Debian (VMID 610, VM-Debian) |
-| IP | [IP_VM_DEBIAN] |
+| Serveur | VM Debian (SRV-GLPI) |
+| IP | *à définir* |
 | Pile | Apache (ou Nginx), PHP, MariaDB |
-| Version de GLPI | [VERSION_GLPI] |
+| Version de GLPI | *à définir* |
 
 ## Étapes prévues
 
@@ -47,8 +47,8 @@ FLUSH PRIVILEGES;
 
 Je ne publie pas les mots de passe de la base ni du compte LDAP dans le dépôt.
 
-[CAPTURE : page d'installation de GLPI]
+> **Capture à ajouter :** page d'installation de GLPI
 
-[CAPTURE : configuration de l'annuaire LDAP]
+> **Capture à ajouter :** configuration de l'annuaire LDAP
 
-[CAPTURE : ticket de test]
+> **Capture à ajouter :** ticket de test

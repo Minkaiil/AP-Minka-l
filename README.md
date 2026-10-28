@@ -1,29 +1,64 @@
-# Minkail - Infrastructure SISR (BTS SIO 2)
+# Infrastructure RedOne - Minkaïl (BTS SIO 2, option SISR)
 
-Ce dépôt présente l'infrastructure que j'ai réalisée pour mes deux ateliers professionnels (AP) de l'option SISR.
+Ce dépôt documente l'infrastructure que je construis pour mes deux ateliers professionnels (AP) : un système d'information d'entreprise virtualisé sur Proxmox, organisé autour d'Active Directory. Chaque page décrit une étape reproductible, avec mes valeurs, mes captures et les points à justifier à l'oral.
 
-| Atelier | Contenu | État |
-| --- | --- | --- |
-| [AP 1](AP%201/README.md) | Active Directory, GLPI, TrueNAS, script de création d'utilisateurs, AD secondaire | En cours |
-| [AP 2](AP%202/README.md) | Interconnexion Proxmox et switchs physiques : segmentation de bout en bout | À venir |
+L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans le document de contexte « RedOne - Organisation » (CERTA, non reproduit ici).
 
-## Mon environnement Proxmox
+## Avancement
 
-Mon infrastructure tourne sur le nœud **pve** de l'hyperviseur Proxmox du BTS, dans le pool **Minkail** (tag `bts.sio2`). Je travaille sur le **VLAN 600**. Les disques des VM sont stockés sur le volume **Raid5-VMs**.
-
-| VMID | Nom | Rôle | Système |
+| Atelier | Chantier | Page | État |
 | --- | --- | --- | --- |
-| 600 | SRV-AD-Minkail | Contrôleur de domaine (AD DS + DNS) | Windows Server 2022 Standard |
-| 605 | VM-USER | Poste utilisateur | Windows 11 |
-| 610 | VM-Debian | Serveur Linux | Debian |
+| AP 1 | Architecture du réseau | [Architecture-du-reseau](Architecture-du-reseau/Architecture-du-reseau.md) | Plan défini |
+| AP 1 | Serveur DC01 : VM, Windows Server, réseau | [Serveur](AP%201/Docs/Serveur/Serveur.md) | Réalisé |
+| AP 1 | Active Directory et DNS | [Active-Directory](AP%201/Docs/Active%20Directory/Active-Directory.md) | Réalisé |
+| AP 1 | Structure d'OU | [Structure-OU](AP%201/Docs/Active%20Directory/Structure-OU.md) | Réalisé |
+| AP 1 | Groupes et comptes utilisateurs | à venir | À venir |
+| AP 1 | Poste client Windows 11 | à venir | À venir |
+| AP 1 | DHCP | à venir | Reporté |
+| AP 1 | AD secondaire | [AD-secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md) | À venir |
+| AP 1 | GLPI | [GLPI](AP%201/Docs/GLPI/GLPI.md) | À venir |
+| AP 1 | TrueNAS | [TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md) | À venir |
+| AP 2 | Segmentation de bout en bout | [AP 2](AP%202/README.md) | À venir |
 
-Le contrôleur de domaine utilise l'adresse **10.2.81.2/24**.
+## Environnement
 
-## Documentation
+Les ressources qui me sont attribuées sur la plateforme Proxmox de la classe :
 
-- [Architecture du réseau](Architecture%20du%20r%C3%A9seau/Architecture-du-reseau.md)
-- [AP 1 - Active Directory](AP%201/Docs/Active%20Directory/Active-Directory.md)
-- [AP 1 - GLPI](AP%201/Docs/GLPI/GLPI.md)
-- [AP 1 - TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md)
-- [AP 1 - AD secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md)
-- [AP 2 - Segmentation de bout en bout](AP%202/README.md)
+| Ressource | Plage |
+| --- | --- |
+| Réseaux IP | 10.2.81.0/24 à 10.2.100.0/24 |
+| VLAN ID | 600 à 699 |
+| VMID Proxmox | 600 à 699 |
+
+Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr2`. Domaine Active Directory : **`redone.local`** (NetBIOS `REDONE`).
+
+| Machine | Nom Proxmox | Nom Windows / Linux | IP | VLAN | État |
+| --- | --- | --- | --- | --- | --- |
+| Premier contrôleur de domaine | `DC01-REDONE` | `DC01` | 10.2.81.2/24 | 600 | Réalisé |
+| Second contrôleur de domaine | à créer | `DC02` | à définir | 600 | À venir |
+| Poste utilisateur Windows 11 | à créer | `PC-USER-01` | à définir | 600 | À venir |
+| Serveur GLPI (Debian) | à créer | `SRV-GLPI` | à définir | 600 | À venir |
+
+## Organisation du dépôt
+
+```
+.
+├── README.md                       Vue d'ensemble et avancement
+├── Architecture-du-reseau/         Adressage, VLAN, flux
+├── AP 1/
+│   ├── README.md                   Contexte et ordre des chantiers
+│   └── Docs/
+│       ├── Serveur/                VM DC01, installation, réseau
+│       ├── Active Directory/       AD DS, DNS, structure d'OU, scripts
+│       ├── AD secondaire/
+│       ├── GLPI/
+│       └── TrueNAS/
+└── AP 2/                           Interconnexion Proxmox et switchs
+```
+
+## Conventions
+
+- Une page par chantier : objectif, valeurs, étapes avec captures, vérifications, questions pour l'oral.
+- Les captures sont dans le dossier `images/` de chaque page, numérotées dans l'ordre de lecture.
+- Les noms de fichiers, d'OU et de groupes n'ont ni accent ni espace.
+- Aucun mot de passe ni identifiant d'administration n'est publié dans ce dépôt.

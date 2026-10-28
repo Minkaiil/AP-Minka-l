@@ -2,7 +2,7 @@
 # A adapter, relire et executer sur un controleur de domaine en PowerShell administrateur.
 # Remplir les CSV et le domaine ci-dessous avant l'execution.
 
-$DomaineAttendu = '[DOMAINE_AD]'
+$DomaineAttendu = 'redone.local'
 $OuPrincipales = @('Administration', 'Groupes', 'Postes', 'Serveurs', 'Utilisateurs')
 $Repertoire = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -10,7 +10,7 @@ Import-Module ActiveDirectory -ErrorAction Stop
 $ErrorActionPreference = 'Stop'
 
 if ($DomaineAttendu -match '\[') {
-    throw 'Remplacez [DOMAINE_AD] par votre vrai domaine avant de lancer le script.'
+    throw 'Remplacez redone.local par votre vrai domaine avant de lancer le script.'
 }
 
 $Domaine = Get-ADDomain

@@ -23,9 +23,9 @@ Labo-Recherche,Ines,Mansouri,i.mansouri
 Accueil,Manon,Lefevre,m.lefevre
 Accueil,Theo,Colin,t.colin
 Accueil,Lina,Boucher,l.boucher
-Visiteurs,Visiteur,Un,visiteur1
-Visiteurs,Visiteur,Deux,visiteur2
-Visiteurs,Visiteur,Trois,visiteur3
+Visiteurs-Medicaux,Visiteur,Un,visiteur1
+Visiteurs-Medicaux,Visiteur,Deux,visiteur2
+Visiteurs-Medicaux,Visiteur,Trois,visiteur3
 Demonstration,Demo,Un,demo1
 Demonstration,Demo,Deux,demo2
 Demonstration,Demo,Trois,demo3

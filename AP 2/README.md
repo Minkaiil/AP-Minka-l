@@ -29,7 +29,7 @@ Extrait de `/etc/network/interfaces` :
 ```
 auto vmbr0
 iface vmbr0 inet manual
-    bridge-ports [INTERFACE_PHYSIQUE]
+    bridge-ports <interface_physique>
     bridge-stp off
     bridge-fd 0
     bridge-vlan-aware yes
@@ -42,15 +42,15 @@ iface vmbr0 inet manual
 - Configurer le port vers Proxmox en **trunk** limité aux VLAN utiles.
 - Configurer les ports des postes physiques en **accès**.
 
-Exemple (syntaxe Cisco, à adapter à mon matériel [MARQUE_ET_MODÈLE]) :
+Exemple (syntaxe Cisco, à adapter à mon matériel <marque et modèle>) :
 
 ```
 vlan 600
  name Minkail
-interface [PORT_VERS_PROXMOX]
+interface <port_vers_proxmox>
  switchport mode trunk
  switchport trunk allowed vlan 600
-interface [PORT_POSTE]
+interface <port_poste>
  switchport mode access
  switchport access vlan 600
 ```
@@ -64,11 +64,11 @@ interface [PORT_POSTE]
 
 | Test | Résultat attendu |
 | --- | --- |
-| VM-USER vers SRV-AD-Minkail (même VLAN) | Réponse au ping |
+| PC-USER-01 vers DC01 (même VLAN) | Réponse au ping |
 | VM d'un VLAN vers un autre VLAN non autorisé | Blocage |
 | Visiteurs vers Serveurs | Blocage |
 | Vérification du trunk (`show interfaces trunk`) | VLAN autorisés visibles |
-| Capture de trames (`tcpdump -e -i [INTERFACE]`) | Tag 802.1Q visible |
+| Capture de trames (`tcpdump -e -i <interface>`) | Tag 802.1Q visible |
 
 ## Points à justifier à l'oral
 
