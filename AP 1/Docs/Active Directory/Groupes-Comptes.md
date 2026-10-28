@@ -7,7 +7,7 @@
 | **Prérequis** | [Structure d'OU](Structure-OU.md) : les OU `Utilisateurs`, `Groupes` et les 10 OU de services existent |
 | **Résultat** | 11 groupes et 30 comptes, rangés dans les bonnes OU |
 | **Script** | [Creer-Utilisateurs.ps1](Creer-Utilisateurs.ps1) |
-| **Suite** | Poste client Windows 11 (à venir) |
+| **Suite** | [Poste client Windows 11](../Client/Client-Windows11.md) |
 
 ## 1. Principe
 
@@ -74,4 +74,4 @@ J'ai copié le script sur `DC01` avec le presse-papiers de la console noVNC et j
 - **Pourquoi ce mot de passe ne serait-il pas acceptable en production ?** Il se déduit du nom, il est identique pour tous les homonymes et il n'expire jamais. En production, chaque compte a un mot de passe initial aléatoire à changer à la première connexion.
 - **À quoi sert `GG_Responsables` ?** À donner à tous les responsables un droit commun, par exemple l'accès à un dossier de pilotage, sans l'ouvrir à leurs collaborateurs.
 
-Suite : poste client Windows 11 (à venir).
+Suite : [poste client Windows 11](../Client/Client-Windows11.md).

@@ -23,7 +23,7 @@ Mettre en place un serveur de fichiers **TrueNAS** avec un partage par service, 
 4. **Joindre TrueNAS au domaine** redone.local (Directory Services > Active Directory).
 5. **Créer les partages SMB** et attribuer les droits aux groupes `GG_<service>` (ACL), jamais aux comptes individuels.
 6. **Activer les instantanés** (snapshots) planifiés sur les datasets.
-7. **Tester** depuis PC-USER-01 : accès au partage de son service, refus sur celui d'un autre service.
+7. **Tester** depuis CLIENT01 : accès au partage de son service, refus sur celui d'un autre service.
 
 ## Points à justifier à l'oral
 
@@ -35,4 +35,4 @@ Mettre en place un serveur de fichiers **TrueNAS** avec un partage par service, 
 
 > **Capture à ajouter :** jonction au domaine
 
-> **Capture à ajouter :** test d'accès depuis PC-USER-01
+> **Capture à ajouter :** test d'accès depuis CLIENT01

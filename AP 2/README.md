@@ -64,7 +64,7 @@ interface <port_poste>
 
 | Test | Résultat attendu |
 | --- | --- |
-| PC-USER-01 vers DC01 (même VLAN) | Réponse au ping |
+| CLIENT01 vers DC01 (même VLAN) | Réponse au ping |
 | VM d'un VLAN vers un autre VLAN non autorisé | Blocage |
 | Visiteurs vers Serveurs | Blocage |
 | Vérification du trunk (`show interfaces trunk`) | VLAN autorisés visibles |

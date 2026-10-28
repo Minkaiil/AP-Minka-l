@@ -21,7 +21,7 @@ dcdiag /q
 Get-ADDomainController -Filter * | Select Name, IPv4Address, IsGlobalCatalog
 ```
 
-6. **Tester la tolérance de panne** : arrêter DC01, vérifier qu'une ouverture de session sur PC-USER-01 fonctionne toujours, puis le redémarrer.
+6. **Tester la tolérance de panne** : arrêter DC01, vérifier qu'une ouverture de session sur CLIENT01 fonctionne toujours, puis le redémarrer.
 7. **Mettre à jour le DNS des clients** : les deux contrôleurs sont déclarés comme serveurs DNS.
 
 ## Points à justifier à l'oral
