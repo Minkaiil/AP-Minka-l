@@ -1,6 +1,11 @@
-# Serveur DC01 - Création de la VM, installation et réseau
+# Serveur DC01 - VM, installation et réseau
 
-Je présente ici la création de la machine virtuelle du premier contrôleur de domaine de RedOne, l'installation de Windows Server 2022 et la configuration réseau, avec mes captures.
+| | |
+| --- | --- |
+| **Chantier** | 1 sur 9 |
+| **Objectif** | Disposer d'un serveur Windows Server 2022 nommé `DC01`, avec une IP fixe, relié au VLAN 600 |
+| **Résultat** | Serveur joignant la passerelle et Internet, prêt à devenir contrôleur de domaine |
+| **Suite** | [Active Directory et DNS](../Active%20Directory/Active-Directory.md) |
 
 ## 1. Valeurs retenues
 
@@ -10,59 +15,64 @@ Je présente ici la création de la machine virtuelle du premier contrôleur de 
 | Nom de la VM (Proxmox) | `DC01-REDONE` |
 | Nom de l'hôte (Windows) | `DC01` |
 | Système | Windows Server 2022 Standard Evaluation (expérience de bureau) |
-| Processeur | 2 cœurs, type `x86-64-v2-AES` |
+| Processeur | 2 sockets × 2 cœurs (4 vCPU), type `x86-64-v2-AES` |
 | Mémoire | 4096 Mio |
-| Disque | 64 Gio sur le stockage `Raid5-VMs` |
+| Disque | 64 Gio sur `Raid5-VMs`, bus IDE |
 | Réseau | pont `vmbr2`, **VLAN 600**, modèle Intel E1000, pare-feu Proxmox activé |
 | Adresse IP | 10.2.81.2/24 |
 | Passerelle | 10.2.81.1 |
-| DNS | 127.0.0.1 (lui-même), puis 10.2.81.2 uniquement après la création du domaine |
+| DNS | 127.0.0.1 (le serveur lui-même) |
 
-Ces valeurs respectent les plages qui me sont réservées : réseaux 10.2.81.0/24 à 10.2.100.0/24, VLAN 600 à 699 et VMID 600 à 699.
+Ces valeurs respectent mes plages réservées : réseaux 10.2.81.0/24 à 10.2.100.0/24, VLAN 600 à 699, VMID 600 à 699.
 
 ## 2. Créer la machine virtuelle
 
-J'ai créé la VM avec l'assistant *Create VM* de Proxmox. La capture ci-dessous est l'écran de confirmation, qui récapitule tous les onglets.
+J'ai créé la VM avec l'assistant *Create VM* de Proxmox. L'écran de confirmation récapitule les choix.
 
 ![Récapitulatif de la création de la VM](images/01-vm-confirmation.png)
 
 | Paramètre | Valeur | Pourquoi |
 | --- | --- | --- |
-| `bios` / `efidisk0` | OVMF (UEFI) avec un disque EFI | Démarrage UEFI, recommandé pour Windows Server 2022 |
-| `machine` | q35 | Chipset récent, adapté à Windows moderne |
-| `cores` / `memory` | 2 cœurs, 4096 Mio | Suffisant pour un contrôleur de domaine de laboratoire |
-| `ide0` | 64 Gio sur `Raid5-VMs` | Disque en IDE : Windows le reconnaît sans pilote supplémentaire pendant l'installation |
+| `bios` et `efidisk0` | OVMF (UEFI) avec un disque EFI | Démarrage UEFI, adapté à Windows Server 2022 |
+| `machine` | q35 | Chipset récent |
+| Processeur | 2 sockets, 2 cœurs | 4 vCPU, confortable pour un contrôleur de domaine de laboratoire |
+| `memory` | 4096 Mio | Suffisant pour AD DS et DNS |
+| `ide0` | 64 Gio | Disque IDE : Windows le reconnaît sans pilote supplémentaire pendant l'installation |
 | `ide2` | `win-server.iso` | ISO d'installation de Windows Server |
 | `net0` | `e1000`, pont `vmbr2`, pare-feu activé | Carte Intel reconnue nativement par Windows |
 | `ostype` | win11 | Profil de pilotes adapté aux Windows récents |
 
-> **Point d'attention :** cet écran ne montre pas de **VLAN Tag**. Je l'avais laissé vide à la création, ce qui m'a causé un problème réseau détaillé au paragraphe 6.
+## 3. Placer la VM dans le VLAN 600
 
-## 3. Installer Windows Server 2022
+Dans Proxmox, *Hardware > Network Device (net0)*, j'ai défini le **VLAN Tag à 600** sur le pont `vmbr2`.
 
-Au démarrage sur l'ISO, j'ai gardé la langue, le format horaire et le clavier en français.
+![Carte réseau de la VM avec le tag VLAN 600](images/02-vm-reseau-vlan600.png)
 
-![Choix de la langue](images/02-install-langue.png)
+Le pont `vmbr2` gère les VLAN : Proxmox ajoute l'étiquette 802.1Q aux trames de la VM, qui arrivent ainsi dans le VLAN 600, celui de ma plage. La VM n'a rien à configurer côté système.
 
-J'ai choisi l'édition **Windows Server 2022 Standard Evaluation (expérience de bureau)**. Elle installe l'interface graphique, plus simple pour s'entraîner et documenter avec des captures.
+## 4. Installer Windows Server 2022
 
-![Choix de l'édition](images/03-install-edition.png)
+J'ai démarré sur l'ISO et gardé la langue, le format horaire et le clavier en français.
 
-C'est une version d'évaluation, utilisable 180 jours.
+![Choix de la langue](images/03-install-langue.png)
 
-## 4. Renommer le serveur
+J'ai choisi l'édition **Windows Server 2022 Standard Evaluation (expérience de bureau)** : elle installe l'interface graphique, plus simple pour s'entraîner et documenter. C'est une version d'évaluation de 180 jours.
 
-J'ai renommé le serveur **`DC01`** (Paramètres > Système > À propos > Renommer ce PC) puis redémarré.
+![Choix de l'édition](images/04-install-edition.png)
 
-![Renommage du serveur en DC01](images/04-renommage-dc01.png)
+## 5. Renommer le serveur
 
-Je renomme le serveur **avant** de le promouvoir en contrôleur de domaine, car changer le nom d'un contrôleur de domaine ensuite est délicat : le nom est enregistré dans l'annuaire et dans le DNS.
+J'ai renommé le serveur **`DC01`** (*Paramètres > Système > À propos > Renommer ce PC*), puis redémarré.
 
-## 5. Configurer l'adresse IP fixe
+![Renommage du serveur en DC01](images/05-renommage-dc01.png)
 
-J'ai configuré le protocole IPv4 de la carte Ethernet (Centre Réseau et partage > Propriétés de la carte > IPv4).
+Je renomme le serveur **avant** de le promouvoir en contrôleur de domaine : son nom est ensuite inscrit dans l'annuaire et le DNS, et le changer devient délicat.
 
-![Configuration IPv4](images/05-config-ip.png)
+## 6. Configurer l'adresse IP fixe
+
+J'ai configuré IPv4 sur la carte Ethernet (*Centre Réseau et partage > Propriétés de la carte > IPv4*).
+
+![Configuration IPv4](images/06-config-ip.png)
 
 | Paramètre | Valeur |
 | --- | --- |
@@ -70,51 +80,41 @@ J'ai configuré le protocole IPv4 de la carte Ethernet (Centre Réseau et partag
 | Masque | 255.255.255.0 |
 | Passerelle par défaut | 10.2.81.1 |
 | DNS préféré | 127.0.0.1 |
-| DNS auxiliaire | 8.8.8.8 (provisoire) |
+| DNS auxiliaire | 8.8.8.8 (provisoire, remplacé ensuite par un redirecteur DNS) |
 
-**Pourquoi ces choix :**
-- Un contrôleur de domaine a besoin d'une **IP fixe**, car tous les clients s'appuient sur son adresse.
-- L'adresse .1 du réseau est celle de la passerelle (le pfSense). Mon serveur prend donc la première adresse libre, .2.
-- Le **DNS préféré est le serveur lui-même** : le rôle DNS sera installé sur ce serveur, et l'annuaire repose sur ses enregistrements.
-- Le DNS auxiliaire `8.8.8.8` ne sert que tant que le domaine n'existe pas. Après la création du domaine, je le retire de la carte et je le configure comme **redirecteur** dans le DNS du serveur.
+- Un contrôleur de domaine a besoin d'une **IP fixe** : tous les clients s'appuient sur son adresse.
+- L'adresse .1 est celle de la passerelle (le pfSense) : mon serveur prend la première adresse libre, .2.
+- Le **DNS préféré est le serveur lui-même** : il héberge la zone du domaine et ses enregistrements, indispensables à l'annuaire.
+- `8.8.8.8` ne sert qu'avant la création du domaine. Ensuite, c'est le DNS du serveur qui transmet les requêtes externes (voir [Active Directory](../Active%20Directory/Active-Directory.md#6-configurer-le-dns)).
 
-Je vérifie la configuration avec `ipconfig /all` : nom d'hôte `DC01`, IP 10.2.81.2, masque, passerelle et DNS corrects, DHCP désactivé.
+## 7. Vérifier
 
-![Résultat de ipconfig /all](images/06-ipconfig.png)
+`ipconfig /all` confirme le nom `DC01`, l'adresse, le masque, la passerelle, le DNS et l'absence de DHCP.
 
-## 6. Problème rencontré : le VLAN Tag était vide
+![Résultat de ipconfig /all](images/07-ipconfig.png)
 
-Après avoir configuré l'adresse, mes tests ping échouaient avec le message `Réponse de 10.2.81.2 : Impossible de joindre l'hôte de destination`. La réponse venait de **ma propre adresse** : le serveur n'avait pas trouvé la passerelle sur le réseau.
-
-**Cause :** la carte réseau de la VM n'avait pas de **VLAN Tag** dans Proxmox. Les trames partaient donc sans étiquette 802.1Q et n'arrivaient jamais dans le VLAN 600, où se trouve l'interface 10.2.81.1 du pfSense.
-
-**Correction :** dans Proxmox, *Hardware > Network Device (net0)*, j'ai renseigné **VLAN Tag = 600** (pont `vmbr2`, Intel E1000, pare-feu activé). Le changement s'applique à chaud, sans redémarrage.
-
-![Carte réseau avec le tag VLAN 600](images/07-vm-reseau-vlan600.png)
-
-## 7. Tests réseau
-
-Après la correction, la passerelle et Internet répondent :
+Les tests ping montrent que la passerelle et Internet répondent.
 
 ![Tests ping vers la passerelle et vers Internet](images/08-tests-ping.png)
 
 | Test | Résultat |
 | --- | --- |
-| `ping 10.2.81.1` (passerelle) | 4 réponses de 10.2.81.1, temps < 1 ms, TTL 64 |
-| `ping 8.8.8.8` (Internet) | 4 réponses de 8.8.8.8, 8 à 9 ms, TTL 117 |
+| `ping 10.2.81.1` (passerelle) | 4 réponses, temps < 1 ms, TTL 64 |
+| `ping 8.8.8.8` (Internet) | 4 réponses, 8 à 9 ms, TTL 117 |
 
-Le premier test prouve que le VLAN 600 est bien relié au pfSense. Le second prouve que le routage vers Internet fonctionne.
+Le premier test prouve que le VLAN 600 est bien relié au pfSense, le second que le routage vers Internet fonctionne.
 
 ## 8. Sauvegarde
 
-Je prends un **snapshot Proxmox** nommé `apres-chantier1`, sans la RAM, pour pouvoir revenir à ce point : Windows installé, serveur nommé `DC01`, réseau fonctionnel.
+Je prends un **snapshot Proxmox** nommé `apres-chantier1`, sans la RAM, pour revenir à cet état : Windows installé, serveur nommé `DC01`, réseau fonctionnel.
 
-## 9. Points à justifier à l'oral
+## 9. Questions pour l'oral
 
 - **Pourquoi une IP fixe pour un contrôleur de domaine ?** Les clients et les autres serveurs le trouvent par son adresse, et son DNS doit rester joignable en permanence.
-- **Pourquoi le DNS préféré pointe-t-il sur le serveur lui-même ?** Il héberge la zone du domaine et ses enregistrements SRV, indispensables à l'annuaire.
-- **À quoi sert le tag VLAN 600 sur la carte de la VM ?** Proxmox ajoute l'étiquette 802.1Q aux trames de la VM : le pont `vmbr2`, configuré avec la gestion des VLAN, les envoie sur le bon VLAN. Sans tag, la VM n'atteint pas la passerelle.
-- **Pourquoi renommer le serveur avant la promotion ?** Le nom est inscrit dans l'annuaire et le DNS : le changer après est risqué.
-- **Pourquoi .2 et pas .0 ou .1 ?** .0 est l'adresse du réseau, .255 le broadcast, et .1 est réservée à la passerelle.
+- **Pourquoi le DNS préféré est-il le serveur lui-même ?** Il héberge la zone du domaine et ses enregistrements SRV, dont l'annuaire a besoin pour fonctionner.
+- **À quoi sert le tag VLAN 600 ?** Proxmox ajoute l'étiquette 802.1Q aux trames de la VM, ce qui les place dans le VLAN 600. Sans tag, la VM n'atteint pas la passerelle du VLAN.
+- **Pourquoi renommer avant la promotion ?** Le nom est inscrit dans l'annuaire et le DNS : le changer après est risqué.
+- **Pourquoi .2 et pas .0 ou .1 ?** .0 est l'adresse du réseau, .255 le broadcast et .1 la passerelle.
+- **Quelle différence entre un snapshot et une sauvegarde ?** Le snapshot est stocké avec la VM : si la VM est supprimée, il disparaît avec elle.
 
 Suite : [Active Directory et DNS](../Active%20Directory/Active-Directory.md).
