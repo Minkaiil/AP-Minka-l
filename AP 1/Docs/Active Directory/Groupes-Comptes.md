@@ -50,15 +50,21 @@ Il peut être relancé sans risque : il ne crée que ce qui manque et ne supprim
 
 ## 3. Exécution
 
-J'ai copié le script sur `DC01` avec le presse-papiers de la console noVNC et je l'ai exécuté en PowerShell administrateur, après un snapshot Proxmox (`avant-utilisateurs`).
+J'ai copié le script sur `DC01` avec le presse-papiers de la console noVNC et je l'ai exécuté en PowerShell administrateur,.
+
+À la fin, le script affiche le tableau des comptes de l'OU `Utilisateurs`, triés par service : 30 comptes, un `Responsable` et deux `Collaborateur` par service.
+
+![Tableau des 30 comptes affiché par le script](images/comptes-02-resultat-script.png)
 
 ## 4. Vérification
 
-Dans *Utilisateurs et ordinateurs Active Directory*, l'OU `Accueil` contient bien ses 3 comptes : Fatima Diallo (responsable), Audrey David et Nicolas Bertrand.
+**Les comptes.** Dans *Utilisateurs et ordinateurs Active Directory*, l'OU `Accueil` contient bien ses 3 comptes : Fatima Diallo (responsable), Audrey David et Nicolas Bertrand.
 
 ![Comptes de l'OU Accueil](images/comptes-01-ou-accueil.png)
 
-> **Captures à ajouter :** l'OU `Groupes` avec les 11 groupes, et les membres d'un groupe (par exemple `GG_Accueil`).
+**Les groupes.** L'OU `Groupes` contient les 11 groupes : un `GG_<service>` par service et `GG_Responsables`. Les propriétés de `GG_Accueil` (onglet *Membres*) montrent ses 3 membres, tous situés dans `redone.local/Utilisateurs/Accueil`.
+
+![Groupes de l'OU Groupes et membres de GG_Accueil](images/comptes-03-groupes-membres.png)
 
 ## 5. Questions pour l'oral
 
