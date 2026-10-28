@@ -22,7 +22,7 @@ Mettre en place sur **Proxmox** :
 | 1 | VM DC01, Windows Server 2022, réseau | [Serveur](Docs/Serveur/Serveur.md) | Réalisé |
 | 2 | AD DS et DNS, domaine `redone.local` | [Active Directory](Docs/Active%20Directory/Active-Directory.md) | Réalisé |
 | 3 | Structure d'OU | [Structure d'OU](Docs/Active%20Directory/Structure-OU.md) | Réalisé |
-| 4 | Groupes et comptes utilisateurs | à venir | À venir |
+| 4 | Groupes et comptes utilisateurs | [Groupes et comptes](Docs/Active%20Directory/Groupes-Comptes.md) | Réalisé |
 | 5 | Poste Windows 11, jonction au domaine | à venir | À venir |
 | 6 | DHCP | à venir | Reporté |
 | 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | À venir |

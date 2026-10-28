@@ -7,7 +7,7 @@
 | **Prérequis** | [Active Directory et DNS](Active-Directory.md) |
 | **Résultat** | 5 OU principales et 10 OU de services |
 | **Script** | [Creer-OU.ps1](Creer-OU.ps1) |
-| **Suite** | Groupes de sécurité et comptes utilisateurs (à venir) |
+| **Suite** | [Groupes et comptes utilisateurs](Groupes-Comptes.md) |
 
 ## 1. Structure choisie
 
@@ -88,4 +88,4 @@ Dans *Utilisateurs et ordinateurs Active Directory*, les OU principales apparais
 - **Pourquoi les OU sont-elles protégées contre la suppression accidentelle ?** Par défaut, une OU créée par PowerShell est protégée : il faut décocher l'option dans l'onglet *Objet* pour la supprimer.
 - **Pourquoi `DC01` reste-t-il dans `Domain Controllers` ?** C'est l'emplacement attendu, sur lequel s'applique la stratégie par défaut des contrôleurs de domaine.
 
-Suite : groupes de sécurité et comptes utilisateurs (à venir).
+Suite : [Groupes et comptes utilisateurs](Groupes-Comptes.md).
