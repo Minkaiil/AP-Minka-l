@@ -76,7 +76,7 @@ Trois tests depuis une invite de commandes :
 | `ping 10.2.81.2` | 4 réponses, 1 ms, 0 % de perte : `DC01` est joignable |
 | `nslookup redone.local` | Réponse `10.2.81.2` : le DNS de `DC01` résout le domaine |
 
-Le `Serveur : UnKnown` affiché par `nslookup` est normal : il n'existe pas de zone de recherche inversée, donc l'adresse du serveur DNS n'a pas de nom. La résolution de `redone.local` fonctionne.
+Le `Serveur : UnKnown` affiché par `nslookup` s'expliquait par l'absence de zone de recherche inversée à ce moment-là : l'adresse du serveur DNS n'avait pas de nom. La zone a été créée ensuite (voir [Active Directory](../Active%20Directory/Active-Directory.md#7-zone-de-recherche-inversée)). La résolution de `redone.local` fonctionnait déjà.
 
 ## 6. Joindre le domaine
 
@@ -109,6 +109,6 @@ La session s'ouvre. Dans une invite de commandes, `whoami` affiche `redone\adavi
 - **Pourquoi Windows 11 Professionnel ?** L'édition Famille ne peut pas joindre un domaine.
 - **Pourquoi un TPM et l'UEFI ?** Ce sont des prérequis de Windows 11.
 - **Que change la jonction au domaine ?** Les comptes et les mots de passe sont vérifiés par `DC01` : n'importe quel utilisateur du domaine peut ouvrir une session sur le poste.
-- **Pourquoi `Serveur : UnKnown` dans `nslookup` ?** Faute de zone inversée, l'adresse du serveur DNS n'a pas de nom associé.
+- **Pourquoi `Serveur : UnKnown` dans `nslookup` (capture ci-dessus) ?** Faute de zone inversée à ce moment-là, l'adresse du serveur DNS n'avait pas de nom associé.
 
 Suite : [AD secondaire](../AD%20secondaire/AD-secondaire.md).

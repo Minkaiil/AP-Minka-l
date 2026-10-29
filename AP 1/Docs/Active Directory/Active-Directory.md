@@ -91,7 +91,7 @@ nslookup redone.local
 
 ![Résolution de redone.local](images/10-nslookup.png)
 
-`redone.local` se résout en `10.2.81.2`. La ligne « Serveur : UnKnown » est normale : `nslookup` cherche le nom du serveur DNS par une requête inverse, et je n'ai pas encore créé de zone de recherche inversée.
+`redone.local` se résout en `10.2.81.2`. À ce stade, la ligne « Serveur : UnKnown » est normale : `nslookup` cherche le nom du serveur DNS par une requête inverse, et la zone de recherche inversée n'existe pas encore. Je la crée à la [section 7](#7-zone-de-recherche-inversée).
 
 ## 6. Configurer le DNS
 
@@ -99,18 +99,51 @@ Dans le Gestionnaire DNS, propriétés de `DC01`, onglet **Redirecteurs**, j'ai 
 
 ![Redirecteur DNS 8.8.8.8](images/11-redirecteur-dns.png)
 
-Le message « Résolution impossible » dans la colonne du nom complet est normal : il vient de la même absence de zone inverse.
+Le message « Résolution impossible » dans la colonne du nom complet vient de la même absence de zone inverse, corrigée à la [section 7](#7-zone-de-recherche-inversée).
 
-## 7. Sauvegarde
+## 7. Zone de recherche inversée
+
+Une zone directe traduit un nom en adresse IP ; une zone **inversée** fait l'inverse, de l'adresse vers le nom. Sans elle, `nslookup` affiche « UnKnown » pour le serveur DNS, et les journaux de plusieurs services (messagerie, supervision, partages) montrent des adresses au lieu de noms. Je la crée dans le Gestionnaire DNS de `DC01`.
+
+![Zones de recherche inversée, vide au départ](images/12-zone-inversee-vide.png)
+
+Clic droit sur *Zones de recherche inversée*, puis *Nouvelle zone*. Je choisis une **zone principale enregistrée dans Active Directory** : elle est ainsi répliquée sur tous les contrôleurs de domaine, `DC02` compris.
+
+![Type de zone : principale, enregistrée dans Active Directory](images/13-zone-inversee-type.png)
+
+Je saisis l'**ID réseau** `10.2.81`, la partie commune de mon réseau `10.2.81.0/24`. L'assistant en déduit le nom de la zone, `81.2.10.in-addr.arpa` : les octets sont écrits à l'envers, c'est le principe de la zone inversée.
+
+![ID réseau 10.2.81](images/14-zone-inversee-id-reseau.png)
+
+La zone apparaît comme *Serveur principal intégré à Active Directory*.
+
+![Zone 81.2.10.in-addr.arpa créée](images/15-zone-inversee-creee.png)
+
+**Les enregistrements pointeurs (PTR).** La zone ne contient au départ que ses enregistrements SOA et NS. J'ajoute un pointeur par contrôleur : clic droit sur la zone, *Nouveau pointeur (PTR)*.
+
+![Création d'un pointeur](images/16-ptr-nouveau.png)
+
+| Adresse | Nom |
+| --- | --- |
+| `10.2.81.2` | `dc01.redone.local` |
+| `10.2.81.3` | `DC02.redone.local` |
+
+![Enregistrements PTR des deux contrôleurs](images/17-ptr-enregistrements.png)
+
+Les serveurs que j'ajouterai ensuite avec une IP fixe (TrueNAS, GLPI) auront leur pointeur de la même façon.
+
+## 8. Sauvegarde
 
 Je prends un **snapshot Proxmox** nommé `apres-chantier2`, sans la RAM : domaine créé, DNS opérationnel.
 
-## 8. Questions pour l'oral
+## 9. Questions pour l'oral
 
 - **Quelle différence entre une forêt, un domaine et un contrôleur de domaine ?** Une forêt regroupe des domaines qui partagent un schéma et une configuration, un domaine est une limite d'administration, et un contrôleur de domaine est un serveur qui porte l'annuaire et authentifie.
 - **À quoi sert le catalogue global ?** Il contient une copie partielle de tous les objets de la forêt, ce qui permet de les rechercher et d'ouvrir une session.
 - **Pourquoi les enregistrements SRV du DNS sont-ils indispensables ?** Les clients s'en servent pour trouver les contrôleurs de domaine et les services de l'annuaire.
 - **Pourquoi un redirecteur plutôt que 8.8.8.8 en DNS auxiliaire ?** Un DNS externe ne connaît pas `redone.local` : si un client l'interroge pour le domaine, il reçoit des erreurs. Le redirecteur laisse le serveur du domaine répondre seul.
+- **À quoi sert la zone de recherche inversée ?** Elle traduit une adresse IP en nom. Sans elle, `nslookup` ne trouve pas le nom du serveur DNS et les journaux n'affichent que des adresses.
+- **Pourquoi `81.2.10.in-addr.arpa` pour le réseau `10.2.81.0/24` ?** Les octets de l'adresse sont écrits à l'envers, car le DNS lit les noms de la racine vers la feuille.
 - **Que sont les rôles FSMO ?** Cinq rôles à instance unique (maître de schéma, maître des noms de domaine, émulateur PDC, maître RID, maître d'infrastructure), tous portés ici par `DC01`.
 - **À quoi sert le mot de passe DSRM ?** À ouvrir le mode de restauration des services d'annuaire pour réparer ou restaurer l'annuaire.
 
