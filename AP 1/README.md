@@ -25,7 +25,7 @@ Mettre en place sur **Proxmox** :
 | 4 | Groupes et comptes utilisateurs | [Groupes et comptes](Docs/Active%20Directory/Groupes-Comptes.md) | Réalisé |
 | 5 | Poste Windows 11, jonction au domaine | [Poste client](Docs/Client/Client-Windows11.md) | Réalisé |
 | 6 | DHCP | à venir | Reporté |
-| 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | À venir |
+| 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | Réalisé |
 | 8 | GLPI | [GLPI](Docs/GLPI/GLPI.md) | À venir |
 | 9 | TrueNAS | [TrueNAS](Docs/TrueNAS/TrueNAS.md) | À venir |
 

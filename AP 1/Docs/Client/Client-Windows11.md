@@ -6,7 +6,7 @@
 | **Objectif** | Disposer d'un poste Windows 11 `CLIENT01` dans le VLAN 600, joint au domaine `redone.local` |
 | **Prérequis** | [Groupes et comptes](../Active%20Directory/Groupes-Comptes.md) : les comptes du domaine existent |
 | **Résultat** | Poste joint au domaine, écran de connexion proposant les comptes `REDONE\...` |
-| **Suite** | AD secondaire (à venir) |
+| **Suite** | [AD secondaire](../AD%20secondaire/AD-secondaire.md) |
 
 ## 1. Valeurs retenues
 
@@ -101,4 +101,4 @@ Après le redémarrage, l'écran de connexion propose un compte du domaine, `RED
 - **Que change la jonction au domaine ?** Les comptes et les mots de passe sont vérifiés par `DC01` : n'importe quel utilisateur du domaine peut ouvrir une session sur le poste.
 - **Pourquoi `Serveur : UnKnown` dans `nslookup` ?** Faute de zone inversée, l'adresse du serveur DNS n'a pas de nom associé.
 
-Suite : AD secondaire (à venir).
+Suite : [AD secondaire](../AD%20secondaire/AD-secondaire.md).

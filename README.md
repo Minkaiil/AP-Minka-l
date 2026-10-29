@@ -15,7 +15,7 @@ L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans 
 | AP 1 | Groupes et comptes utilisateurs | [Groupes-Comptes](AP%201/Docs/Active%20Directory/Groupes-Comptes.md) | Réalisé |
 | AP 1 | Poste client Windows 11 | [Client-Windows11](AP%201/Docs/Client/Client-Windows11.md) | Réalisé |
 | AP 1 | DHCP | à venir | Reporté |
-| AP 1 | AD secondaire | [AD-secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md) | À venir |
+| AP 1 | AD secondaire | [AD-secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md) | Réalisé |
 | AP 1 | GLPI | [GLPI](AP%201/Docs/GLPI/GLPI.md) | À venir |
 | AP 1 | TrueNAS | [TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md) | À venir |
 | AP 2 | Segmentation de bout en bout | [AP 2](AP%202/README.md) | À venir |
@@ -35,7 +35,7 @@ Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr
 | Machine | Nom Proxmox | Nom Windows / Linux | IP | VLAN | État |
 | --- | --- | --- | --- | --- | --- |
 | Premier contrôleur de domaine | `DC01-REDONE` | `DC01` | 10.2.81.2/24 | 600 | Réalisé |
-| Second contrôleur de domaine | à créer | `DC02` | à définir | 600 | À venir |
+| Second contrôleur de domaine | 602 | `DC02` | 10.2.81.3 | 600 | Réalisé |
 | Poste utilisateur Windows 11 | 601 | `CLIENT01` | 10.2.81.10 | 600 | Réalisé |
 | Serveur GLPI (Debian) | à créer | `SRV-GLPI` | à définir | 600 | À venir |
 
