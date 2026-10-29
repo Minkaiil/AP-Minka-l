@@ -112,7 +112,30 @@ Après le redémarrage, l'écran de connexion de `DC02` propose `REDONE\Administ
 
 ![Configuration DNS de DC01](images/15-dns-dc01.png)
 
-## 9. Questions pour l'oral
+## 9. Tester la tolérance de panne
+
+L'objectif du second contrôleur est de continuer à servir les utilisateurs quand `DC01` est arrêté. Je le teste avec le poste `CLIENT01`.
+
+**Préparation.** Sur `CLIENT01`, le DNS préféré reste `10.2.81.2` (`DC01`) et j'ajoute `10.2.81.3` (`DC02`) en DNS auxiliaire : sans cela, le client n'aurait plus aucun DNS sans `DC01`.
+
+![DNS de CLIENT01 : DC01 puis DC02](images/16-client-dns-auxiliaire.png)
+
+**Test.** J'arrête `DC01` (la VM 600 apparaît arrêtée dans l'arborescence Proxmox, `CLIENT01` et `DC02` tournent), puis j'ouvre une session sur `CLIENT01` avec un compte du domaine, `REDONE\adavid`.
+
+![Ouverture de session avec DC01 arrêté](images/17-connexion-dc01-eteint.png)
+
+**Résultat.** La session s'ouvre. Deux commandes le confirment :
+
+![whoami et logonserver](images/18-whoami-logonserver.png)
+
+| Commande | Résultat | Signification |
+| --- | --- | --- |
+| `whoami` | `redone\adavid` | La session est bien celle d'un compte du domaine |
+| `echo %logonserver%` | `\\DC02` | C'est `DC02` qui a authentifié l'utilisateur, `DC01` étant arrêté |
+
+La tolérance de panne fonctionne : un second contrôleur, avec son DNS et son catalogue global, suffit à ouvrir une session.
+
+## 10. Questions pour l'oral
 
 - **Pourquoi deux contrôleurs de domaine ?** Disponibilité : si `DC01` tombe, `DC02` continue d'authentifier les utilisateurs et de répondre au DNS. Les deux contrôleurs se répartissent aussi la charge.
 - **Que réplique `DC02` ?** L'annuaire Active Directory (comptes, groupes, OU), la zone DNS intégrée à l'annuaire et le dossier SYSVOL.

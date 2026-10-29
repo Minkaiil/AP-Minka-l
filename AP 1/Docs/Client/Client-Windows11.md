@@ -92,7 +92,17 @@ Après le redémarrage, l'écran de connexion propose un compte du domaine, `RED
 
 ![Écran de connexion du domaine](images/08-ecran-connexion.png)
 
-## 8. Questions pour l'oral
+## 8. Ouverture de session avec un compte du domaine
+
+Depuis l'écran de connexion, *Autre utilisateur* : `REDONE\adavid`.
+
+![Connexion avec REDONE\adavid](images/10-connexion-adavid.png)
+
+La session s'ouvre. Dans une invite de commandes, `whoami` affiche `redone\adavid` : l'utilisateur est bien authentifié par le domaine. `echo %logonserver%` renvoie `\\DC02` : ce test a été fait avec `DC01` arrêté (voir [AD secondaire](../AD%20secondaire/AD-secondaire.md#9-tester-la-tolérance-de-panne)).
+
+![whoami et logonserver](images/11-whoami-logonserver.png)
+
+## 9. Questions pour l'oral
 
 - **Pourquoi une IP fixe sur le client ?** Il n'y a pas de DHCP dans ce laboratoire ; le client doit connaître son adresse, sa passerelle et son DNS.
 - **Pourquoi le DNS du client est-il `DC01` et pas `8.8.8.8` ?** Le client retrouve le contrôleur de domaine grâce aux enregistrements DNS du domaine, que seul `DC01` possède.
