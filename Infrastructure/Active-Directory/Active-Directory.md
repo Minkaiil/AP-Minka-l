@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 2 sur 9 |
+| **Chantier** | 2 sur 7 |
 | **Objectif** | Transformer `DC01` en premier contrôleur du domaine `redone.local`, avec le DNS |
 | **Prérequis** | [Serveur DC01](../Serveur/Serveur.md) : serveur nommé, IP fixe, réseau fonctionnel |
 | **Résultat** | Domaine opérationnel, ouverture de session `REDONE\Administrateur`, DNS qui résout le domaine |

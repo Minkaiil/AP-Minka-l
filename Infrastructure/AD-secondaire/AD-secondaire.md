@@ -2,11 +2,11 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 7 sur 9 |
+| **Chantier** | 6 sur 7 |
 | **Objectif** | Ajouter un second contrôleur de domaine `DC02` pour que l'annuaire et le DNS restent disponibles si `DC01` tombe |
-| **Prérequis** | [Serveur DC01](../Serveur/Serveur.md) et [Active Directory](../Active%20Directory/Active-Directory.md) en place |
+| **Prérequis** | [Serveur DC01](../Serveur/Serveur.md) et [Active Directory](../Active-Directory/Active-Directory.md) en place |
 | **Résultat** | `DC02` contrôleur de domaine de `redone.local`, avec DNS et catalogue global, qui réplique l'annuaire de `DC01` |
-| **Suite** | GLPI (à venir) |
+| **Suite** | [TrueNAS](../TrueNAS/TrueNAS.md) |
 
 ## 1. Valeurs retenues
 
@@ -145,4 +145,4 @@ La tolérance de panne fonctionne : un second contrôleur, avec son DNS et son c
 - **Qu'est-ce que le mot de passe DSRM ?** Le mot de passe du mode de restauration des services d'annuaire, utilisé pour réparer ou restaurer l'annuaire, hors domaine.
 - **Où sont les rôles FSMO ?** Sur `DC01`, premier contrôleur de la forêt. `DC02` peut les prendre en cas de panne définitive de `DC01`.
 
-Suite : GLPI (à venir).
+Suite : [TrueNAS](../TrueNAS/TrueNAS.md).

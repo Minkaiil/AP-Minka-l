@@ -2,11 +2,11 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 5 sur 9 |
+| **Chantier** | 5 sur 7 |
 | **Objectif** | Disposer d'un poste Windows 11 `CLIENT01` dans le VLAN 600, joint au domaine `redone.local` |
-| **Prérequis** | [Groupes et comptes](../Active%20Directory/Groupes-Comptes.md) : les comptes du domaine existent |
+| **Prérequis** | [Groupes et comptes](../Active-Directory/Groupes-Comptes.md) : les comptes du domaine existent |
 | **Résultat** | Poste joint au domaine, écran de connexion proposant les comptes `REDONE\...` |
-| **Suite** | [AD secondaire](../AD%20secondaire/AD-secondaire.md) |
+| **Suite** | [AD secondaire](../AD-secondaire/AD-secondaire.md) |
 
 ## 1. Valeurs retenues
 
@@ -76,7 +76,7 @@ Trois tests depuis une invite de commandes :
 | `ping 10.2.81.2` | 4 réponses, 1 ms, 0 % de perte : `DC01` est joignable |
 | `nslookup redone.local` | Réponse `10.2.81.2` : le DNS de `DC01` résout le domaine |
 
-Le `Serveur : UnKnown` affiché par `nslookup` s'expliquait par l'absence de zone de recherche inversée à ce moment-là : l'adresse du serveur DNS n'avait pas de nom. La zone a été créée ensuite (voir [Active Directory](../Active%20Directory/Active-Directory.md#7-zone-de-recherche-inversée)). La résolution de `redone.local` fonctionnait déjà.
+Le `Serveur : UnKnown` affiché par `nslookup` s'expliquait par l'absence de zone de recherche inversée à ce moment-là : l'adresse du serveur DNS n'avait pas de nom. La zone a été créée ensuite (voir [Active Directory](../Active-Directory/Active-Directory.md#7-zone-de-recherche-inversée)). La résolution de `redone.local` fonctionnait déjà.
 
 ## 6. Joindre le domaine
 
@@ -98,7 +98,7 @@ Depuis l'écran de connexion, *Autre utilisateur* : `REDONE\adavid`.
 
 ![Connexion avec REDONE\adavid](images/10-connexion-adavid.png)
 
-La session s'ouvre. Dans une invite de commandes, `whoami` affiche `redone\adavid` : l'utilisateur est bien authentifié par le domaine. `echo %logonserver%` renvoie `\\DC02` : ce test a été fait avec `DC01` arrêté (voir [AD secondaire](../AD%20secondaire/AD-secondaire.md#9-tester-la-tolérance-de-panne)).
+La session s'ouvre. Dans une invite de commandes, `whoami` affiche `redone\adavid` : l'utilisateur est bien authentifié par le domaine. `echo %logonserver%` renvoie `\\DC02` : ce test a été fait avec `DC01` arrêté (voir [AD secondaire](../AD-secondaire/AD-secondaire.md#9-tester-la-tolérance-de-panne)).
 
 ![whoami et logonserver](images/11-whoami-logonserver.png)
 
@@ -111,4 +111,4 @@ La session s'ouvre. Dans une invite de commandes, `whoami` affiche `redone\adavi
 - **Que change la jonction au domaine ?** Les comptes et les mots de passe sont vérifiés par `DC01` : n'importe quel utilisateur du domaine peut ouvrir une session sur le poste.
 - **Pourquoi `Serveur : UnKnown` dans `nslookup` (capture ci-dessus) ?** Faute de zone inversée à ce moment-là, l'adresse du serveur DNS n'avait pas de nom associé.
 
-Suite : [AD secondaire](../AD%20secondaire/AD-secondaire.md).
+Suite : [AD secondaire](../AD-secondaire/AD-secondaire.md).

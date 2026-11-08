@@ -54,7 +54,7 @@ Les visiteurs médicaux, qui travaillent sur le terrain, n'ont pas de VLAN dans 
 - Chaque VLAN, sauf Visiteurs, peut accéder uniquement aux VLAN **Serveurs** et **Sortie**.
 - Le VLAN **Visiteurs** peut seulement interroger les serveurs **DNS** et **DHCP** et sortir sur Internet.
 
-Leur mise en œuvre de bout en bout est traitée dans l'[AP 2](../AP%202/README.md).
+Leur mise en œuvre de bout en bout est traitée dans l'[AP 2](../../AP2/README.md).
 
 ## Flux en place
 

@@ -4,21 +4,30 @@ Ce dépôt documente l'infrastructure que je construis pour mes deux ateliers pr
 
 L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans le document de contexte « RedOne - Organisation » (CERTA, non reproduit ici).
 
+## Organisation
+
+Le travail se fait en trois temps :
+
+1. **[Infrastructure de base](Infrastructure/README.md)** : domaine Active Directory, DNS, second contrôleur, poste client et serveur de fichiers. C'est le socle commun aux deux ateliers.
+2. **[AP 1](AP1/README.md)** : services d'infrastructure ajoutés sur ce socle (GLPI et un second service).
+3. **[AP 2](AP2/README.md)** : interconnexion de Proxmox et des switchs physiques, segmentation de bout en bout.
+
 ## Avancement
 
-| Atelier | Chantier | Page | État |
+| Partie | Chantier | Page | État |
 | --- | --- | --- | --- |
-| AP 1 | Architecture du réseau | [Architecture-du-reseau](Architecture-du-reseau/Architecture-du-reseau.md) | Plan défini |
-| AP 1 | Serveur DC01 : VM, Windows Server, réseau | [Serveur](AP%201/Docs/Serveur/Serveur.md) | Réalisé |
-| AP 1 | Active Directory et DNS | [Active-Directory](AP%201/Docs/Active%20Directory/Active-Directory.md) | Réalisé |
-| AP 1 | Structure d'OU | [Structure-OU](AP%201/Docs/Active%20Directory/Structure-OU.md) | Réalisé |
-| AP 1 | Groupes et comptes utilisateurs | [Groupes-Comptes](AP%201/Docs/Active%20Directory/Groupes-Comptes.md) | Réalisé |
-| AP 1 | Poste client Windows 11 | [Client-Windows11](AP%201/Docs/Client/Client-Windows11.md) | Réalisé |
-| AP 1 | DHCP | à venir | Reporté |
-| AP 1 | AD secondaire | [AD-secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md) | Réalisé |
-| AP 1 | GLPI | [GLPI](AP%201/Docs/GLPI/GLPI.md) | À venir |
-| AP 1 | TrueNAS | [TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md) | Réalisé |
-| AP 2 | Segmentation de bout en bout | [AP 2](AP%202/README.md) | À venir |
+| Infrastructure | Architecture du réseau | [Architecture-du-reseau](Infrastructure/Architecture-du-reseau/Architecture-du-reseau.md) | Plan défini |
+| Infrastructure | Serveur DC01 : VM, Windows Server, réseau | [Serveur](Infrastructure/Serveur/Serveur.md) | Réalisé |
+| Infrastructure | Active Directory et DNS | [Active-Directory](Infrastructure/Active-Directory/Active-Directory.md) | Réalisé |
+| Infrastructure | Structure d'OU | [Structure-OU](Infrastructure/Active-Directory/Structure-OU.md) | Réalisé |
+| Infrastructure | Groupes et comptes utilisateurs | [Groupes-Comptes](Infrastructure/Active-Directory/Groupes-Comptes.md) | Réalisé |
+| Infrastructure | Poste client Windows 11 | [Client-Windows11](Infrastructure/Client/Client-Windows11.md) | Réalisé |
+| Infrastructure | AD secondaire | [AD-secondaire](Infrastructure/AD-secondaire/AD-secondaire.md) | Réalisé |
+| Infrastructure | TrueNAS | [TrueNAS](Infrastructure/TrueNAS/TrueNAS.md) | Réalisé |
+| Infrastructure | DHCP | à venir | Reporté |
+| AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | À venir |
+| AP 1 | Service complémentaire | à définir | À venir |
+| AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | À venir |
 
 ## Environnement
 
@@ -30,31 +39,25 @@ Les ressources qui me sont attribuées sur la plateforme Proxmox de la classe :
 | VLAN ID | 600 à 699 |
 | VMID Proxmox | 600 à 699 |
 
-Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr2`. Domaine Active Directory : **`redone.local`** (NetBIOS `REDONE`).
-
-| Machine | Nom Proxmox | Nom Windows / Linux | IP | VLAN | État |
-| --- | --- | --- | --- | --- | --- |
-| Premier contrôleur de domaine | `DC01-REDONE` | `DC01` | 10.2.81.2/24 | 600 | Réalisé |
-| Second contrôleur de domaine | 602 | `DC02` | 10.2.81.3 | 600 | Réalisé |
-| Serveur de fichiers TrueNAS | 603 | `truenas` | 10.2.81.4 | 600 | Réalisé |
-| Poste utilisateur Windows 11 | 601 | `CLIENT01` | 10.2.81.10 | 600 | Réalisé |
-| Serveur GLPI (Debian) | à créer | `SRV-GLPI` | à définir | 600 | À venir |
+Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr2`. Domaine Active Directory : **`redone.local`** (NetBIOS `REDONE`). Le détail des machines est dans [Infrastructure](Infrastructure/README.md#machines).
 
 ## Organisation du dépôt
 
 ```
 .
 ├── README.md                       Vue d'ensemble et avancement
-├── Architecture-du-reseau/         Adressage, VLAN, flux
-├── AP 1/
-│   ├── README.md                   Contexte et ordre des chantiers
-│   └── Docs/
-│       ├── Serveur/                VM DC01, installation, réseau
-│       ├── Active Directory/       AD DS, DNS, structure d'OU, scripts
-│       ├── AD secondaire/
-│       ├── GLPI/
-│       └── TrueNAS/
-└── AP 2/                           Interconnexion Proxmox et switchs
+├── Infrastructure/                 Infrastructure de base
+│   ├── README.md                   Chantiers et machines
+│   ├── Architecture-du-reseau/     Adressage, VLAN, flux
+│   ├── Serveur/                    VM DC01, installation, réseau
+│   ├── Active-Directory/           AD DS, DNS, OU, comptes, scripts
+│   ├── Client/                     Poste Windows 11
+│   ├── AD-secondaire/              Second contrôleur DC02
+│   └── TrueNAS/                    Serveur de fichiers
+├── AP1/                            Services d'infrastructure
+│   ├── README.md
+│   └── GLPI/
+└── AP2/                            Interconnexion Proxmox et switchs
 ```
 
 ## Conventions

@@ -2,10 +2,10 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 1 sur 9 |
+| **Chantier** | 1 sur 7 |
 | **Objectif** | Disposer d'un serveur Windows Server 2022 nommé `DC01`, avec une IP fixe, relié au VLAN 600 |
 | **Résultat** | Serveur joignant la passerelle et Internet, prêt à devenir contrôleur de domaine |
-| **Suite** | [Active Directory et DNS](../Active%20Directory/Active-Directory.md) |
+| **Suite** | [Active Directory et DNS](../Active-Directory/Active-Directory.md) |
 
 ## 1. Valeurs retenues
 
@@ -85,7 +85,7 @@ J'ai configuré IPv4 sur la carte Ethernet (*Centre Réseau et partage > Propri�
 - Un contrôleur de domaine a besoin d'une **IP fixe** : tous les clients s'appuient sur son adresse.
 - L'adresse .1 est celle de la passerelle (le pfSense) : mon serveur prend la première adresse libre, .2.
 - Le **DNS préféré est le serveur lui-même** : il héberge la zone du domaine et ses enregistrements, indispensables à l'annuaire.
-- `8.8.8.8` ne sert qu'avant la création du domaine. Ensuite, c'est le DNS du serveur qui transmet les requêtes externes (voir [Active Directory](../Active%20Directory/Active-Directory.md#6-configurer-le-dns)).
+- `8.8.8.8` ne sert qu'avant la création du domaine. Ensuite, c'est le DNS du serveur qui transmet les requêtes externes (voir [Active Directory](../Active-Directory/Active-Directory.md#6-configurer-le-dns)).
 
 ## 7. Vérifier
 
@@ -117,4 +117,4 @@ Je prends un **snapshot Proxmox** nommé `apres-chantier1`, sans la RAM, pour re
 - **Pourquoi .2 et pas .0 ou .1 ?** .0 est l'adresse du réseau, .255 le broadcast et .1 la passerelle.
 - **Quelle différence entre un snapshot et une sauvegarde ?** Le snapshot est stocké avec la VM : si la VM est supprimée, il disparaît avec elle.
 
-Suite : [Active Directory et DNS](../Active%20Directory/Active-Directory.md).
+Suite : [Active Directory et DNS](../Active-Directory/Active-Directory.md).

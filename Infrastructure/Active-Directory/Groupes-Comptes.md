@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 4 sur 9 |
+| **Chantier** | 4 sur 7 |
 | **Objectif** | Créer un groupe de sécurité par service et 3 comptes par service (1 responsable et 2 collaborateurs) |
 | **Prérequis** | [Structure d'OU](Structure-OU.md) : les OU `Utilisateurs`, `Groupes` et les 10 OU de services existent |
 | **Résultat** | 11 groupes et 30 comptes, rangés dans les bonnes OU |

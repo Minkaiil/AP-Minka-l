@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 3 sur 9 |
+| **Chantier** | 3 sur 7 |
 | **Objectif** | Organiser l'annuaire `redone.local` en unités d'organisation (OU), avec un script reproductible |
 | **Prérequis** | [Active Directory et DNS](Active-Directory.md) |
 | **Résultat** | 5 OU principales et 10 OU de services |

@@ -2,11 +2,12 @@
 
 | | |
 | --- | --- |
-| **Chantier** | 9 sur 9 |
+| **Chantier** | 7 sur 7 |
 | **Objectif** | Mettre en place un serveur de fichiers TrueNAS avec un partage par service, dont les droits s'appuient sur les groupes `GG_<service>` de l'annuaire |
-| **Prérequis** | [Active Directory](../Active%20Directory/Active-Directory.md), [groupes et comptes](../Active%20Directory/Groupes-Comptes.md) et zone DNS inversée en place |
+| **Prérequis** | [Active Directory](../Active-Directory/Active-Directory.md), [groupes et comptes](../Active-Directory/Groupes-Comptes.md) et zone DNS inversée en place |
 | **Résultat** | Un partage par service, accessible aux seuls membres du groupe du service |
 | **État** | **Réalisé** |
+| **Suite** | [AP 1 : GLPI](../../AP1/GLPI/GLPI.md) |
 
 ## 1. Valeurs retenues
 
@@ -136,3 +137,5 @@ Le même utilisateur, sur le même serveur, accède à un partage et pas à l'au
 - **Pourquoi `NFS4_RESTRICTED` ?** Ce préréglage ne donne aucun accès à « tout le monde » : seuls le propriétaire et le groupe désigné entrent.
 - **Comment prouver que ça marche ?** Le même utilisateur accède à son partage et se voit refuser celui d'un autre service.
 - **Quelle différence entre un snapshot et une sauvegarde ?** Le snapshot est stocké sur le même pool : si le pool disparaît, il disparaît avec lui.
+
+Suite : [AP 1 : GLPI](../../AP1/GLPI/GLPI.md).
