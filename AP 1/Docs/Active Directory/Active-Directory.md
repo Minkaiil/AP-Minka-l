@@ -130,6 +130,12 @@ La zone apparaît comme *Serveur principal intégré à Active Directory*.
 
 ![Enregistrements PTR des deux contrôleurs](images/17-ptr-enregistrements.png)
 
+**Vérification.** Sur `DC01`, `nslookup 10.2.81.2` renvoie maintenant le nom `DC01.redone.local`, ce qui échouait avant la zone inversée. `nslookup redone.local` renvoie les deux contrôleurs, `10.2.81.3` (`DC02`) et `10.2.81.2` (`DC01`).
+
+![nslookup avec la zone inversée](images/18-nslookup-inverse.png)
+
+La ligne `Serveur : UnKnown` reste affichée, avec `Address: ::1` : sur un contrôleur de domaine, `nslookup` interroge d'abord le DNS local en IPv6 (`::1`) et cherche son nom dans une zone inversée IPv6, qui n'existe pas. Ce n'est qu'un affichage : en imposant le serveur IPv4, `nslookup redone.local 10.2.81.2`, il affiche son nom.
+
 Les serveurs que j'ajouterai ensuite avec une IP fixe (TrueNAS, GLPI) auront leur pointeur de la même façon.
 
 ## 8. Sauvegarde
