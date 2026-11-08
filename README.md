@@ -17,7 +17,7 @@ L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans 
 | AP 1 | DHCP | à venir | Reporté |
 | AP 1 | AD secondaire | [AD-secondaire](AP%201/Docs/AD%20secondaire/AD-secondaire.md) | Réalisé |
 | AP 1 | GLPI | [GLPI](AP%201/Docs/GLPI/GLPI.md) | À venir |
-| AP 1 | TrueNAS | [TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md) | En cours |
+| AP 1 | TrueNAS | [TrueNAS](AP%201/Docs/TrueNAS/TrueNAS.md) | Réalisé |
 | AP 2 | Segmentation de bout en bout | [AP 2](AP%202/README.md) | À venir |
 
 ## Environnement
@@ -36,7 +36,7 @@ Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr
 | --- | --- | --- | --- | --- | --- |
 | Premier contrôleur de domaine | `DC01-REDONE` | `DC01` | 10.2.81.2/24 | 600 | Réalisé |
 | Second contrôleur de domaine | 602 | `DC02` | 10.2.81.3 | 600 | Réalisé |
-| Serveur de fichiers TrueNAS | 603 | `truenas` | 10.2.81.4 | 600 | En cours |
+| Serveur de fichiers TrueNAS | 603 | `truenas` | 10.2.81.4 | 600 | Réalisé |
 | Poste utilisateur Windows 11 | 601 | `CLIENT01` | 10.2.81.10 | 600 | Réalisé |
 | Serveur GLPI (Debian) | à créer | `SRV-GLPI` | à définir | 600 | À venir |
 

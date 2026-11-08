@@ -24,7 +24,7 @@
 | --- | --- | --- | --- | --- |
 | `DC01` | 10.2.81.2/24 | 600 | Contrôleur de domaine, DNS | Réalisé |
 | `DC02` | 10.2.81.3 | 600 | Second contrôleur de domaine | Réalisé |
-| `truenas` | 10.2.81.4 | 600 | Serveur de fichiers TrueNAS | En cours |
+| `truenas` | 10.2.81.4 | 600 | Serveur de fichiers TrueNAS | Réalisé |
 | `CLIENT01` | 10.2.81.10 | 600 | Poste Windows 11 | Réalisé |
 | `SRV-GLPI` | à définir | 600 | GLPI (Debian) | À venir |
 
