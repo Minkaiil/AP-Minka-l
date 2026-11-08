@@ -27,7 +27,7 @@ Mettre en place sur **Proxmox** :
 | 6 | DHCP | à venir | Reporté |
 | 7 | AD secondaire | [AD secondaire](Docs/AD%20secondaire/AD-secondaire.md) | Réalisé |
 | 8 | GLPI | [GLPI](Docs/GLPI/GLPI.md) | À venir |
-| 9 | TrueNAS | [TrueNAS](Docs/TrueNAS/TrueNAS.md) | À venir |
+| 9 | TrueNAS | [TrueNAS](Docs/TrueNAS/TrueNAS.md) | En cours |
 
 Le réseau et l'adressage sont décrits dans [Architecture du réseau](../Architecture-du-reseau/Architecture-du-reseau.md).
 
