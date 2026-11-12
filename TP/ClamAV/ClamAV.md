@@ -48,6 +48,24 @@ Le démon est `active (running)` et activé au démarrage. Il communique par une
 
 ![clamav-daemon actif](images/02-clamd.png)
 
+Vérifications du tutoriel, faites une fois tous les services en place :
+
+```
+ls -al /var/lib/clamav/
+ps -edf | grep clam
+clamonacc --help | head -5
+```
+
+| Vérification | Résultat |
+| --- | --- |
+| Bases de signatures | `main.cvd` (89 Mo), `daily.cvd` (23 Mo), `bytecode.cvd` et `freshclam.dat`, appartenant à l'utilisateur `clamav` |
+| Processus | `freshclam -d` (mise à jour en tâche de fond) et `clamd` tournent sous le compte `clamav` ; `clamonacc` tourne sous root |
+| Binaire `clamonacc` | Présent, version 1.4.3, comme le moteur |
+
+Les démons de mise à jour et d'analyse tournent avec un compte dédié et sans privilèges (`clamav`) : en cas de faille, l'attaquant n'obtient pas les droits root. Seul `clamonacc` a besoin de root pour surveiller les accès aux fichiers.
+
+![Signatures, processus et binaire clamonacc](images/02b-verifications.png)
+
 ## 4. Premier test avec le fichier EICAR
 
 Le fichier EICAR est un faux virus standardisé, inoffensif, que tous les antivirus détectent. Il sert à tester une protection sans risque.
