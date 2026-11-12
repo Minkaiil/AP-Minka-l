@@ -7,7 +7,9 @@
 | **Prérequis** | [Active Directory](../Active-Directory/Active-Directory.md), [groupes et comptes](../Active-Directory/Groupes-Comptes.md) et zone DNS inversée en place |
 | **Résultat** | Un partage par service, accessible aux seuls membres du groupe du service |
 | **État** | **Réalisé** |
-| **Suite** | [AP 1 : GLPI](../../AP1/GLPI/GLPI.md) |
+
+> Cette page pose le socle : trois services de démonstration, un partage par service. Dans l'AP 1, les 10 services sont regroupés sous un partage unique `Services`, monté en lecteur `S:` par GPO : voir [Partages des services et lecteur S:](../../AP1/Partages-Services/Partages-Services.md). Les partages individuels décrits ici n'existent donc plus.
+| **Suite** | [AP 1 : partages des services et lecteur S:](../../AP1/Partages-Services/Partages-Services.md) |
 
 ## 1. Valeurs retenues
 
@@ -138,4 +140,4 @@ Le même utilisateur, sur le même serveur, accède à un partage et pas à l'au
 - **Comment prouver que ça marche ?** Le même utilisateur accède à son partage et se voit refuser celui d'un autre service.
 - **Quelle différence entre un snapshot et une sauvegarde ?** Le snapshot est stocké sur le même pool : si le pool disparaît, il disparaît avec lui.
 
-Suite : [AP 1 : GLPI](../../AP1/GLPI/GLPI.md).
+Suite : [AP 1 : partages des services et lecteur S:](../../AP1/Partages-Services/Partages-Services.md).

@@ -9,7 +9,7 @@ L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans 
 Le travail se fait en trois temps :
 
 1. **[Infrastructure de base](Infrastructure/README.md)** : domaine Active Directory, DNS, second contrôleur, postes clients et serveur de fichiers. C'est le socle commun aux deux ateliers.
-2. **[AP 1](AP1/README.md)** : services d'infrastructure ajoutés sur ce socle (GLPI et un second service).
+2. **[AP 1](AP1/README.md)** : services d'infrastructure ajoutés sur ce socle (lecteur réseau des services, GLPI et un service complémentaire).
 3. **[AP 2](AP2/README.md)** : interconnexion de Proxmox et des switchs physiques, segmentation de bout en bout.
 
 ## Avancement
@@ -26,6 +26,7 @@ Le travail se fait en trois temps :
 | Infrastructure | TrueNAS | [TrueNAS](Infrastructure/TrueNAS/TrueNAS.md) | Réalisé |
 | Infrastructure | Poste client Debian 13 (TP) | [Client-Debian](Infrastructure/Client-Debian/Client-Debian.md) | Réalisé |
 | Infrastructure | DHCP | à venir | Reporté |
+| AP 1 | Partages des services et lecteur S: par GPO | [Partages-Services](AP1/Partages-Services/Partages-Services.md) | Réalisé |
 | AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | À venir |
 | AP 1 | Service complémentaire | à définir | À venir |
 | AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | À venir |
@@ -66,6 +67,7 @@ Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr
 │   └── TrueNAS/                    Serveur de fichiers
 ├── AP1/                            Services d'infrastructure
 │   ├── README.md
+│   ├── Partages-Services/          Lecteur S: par GPO
 │   └── GLPI/
 ├── AP2/                            Interconnexion Proxmox et switchs
 └── TP/                             TP de cours (ClamAV)

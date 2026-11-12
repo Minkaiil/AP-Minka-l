@@ -13,7 +13,7 @@ Cette partie décrit l'infrastructure commune sur laquelle reposent les deux ate
 | 4 | Groupes et comptes utilisateurs | [Groupes et comptes](Active-Directory/Groupes-Comptes.md) | Réalisé |
 | 5 | Poste Windows 11, jonction au domaine | [Poste client](Client/Client-Windows11.md) | Réalisé |
 | 6 | AD secondaire | [AD secondaire](AD-secondaire/AD-secondaire.md) | Réalisé |
-| 7 | TrueNAS, partages par groupe | [TrueNAS](TrueNAS/TrueNAS.md) | Réalisé |
+| 7 | TrueNAS, partages par groupe (étendu dans l'[AP 1](../AP1/Partages-Services/Partages-Services.md)) | [TrueNAS](TrueNAS/TrueNAS.md) | Réalisé |
 | + | Poste Debian 13 avec bureau, adresse fixe (support de TP) | [Poste Debian](Client-Debian/Client-Debian.md) | Réalisé |
 | - | DHCP | à venir | Reporté |
 
