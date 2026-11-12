@@ -30,6 +30,14 @@ Le travail se fait en trois temps :
 | AP 1 | Service complémentaire | à définir | À venir |
 | AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | À venir |
 
+## TP de cours
+
+Travaux pratiques réalisés sur les machines de l'infrastructure, hors ateliers professionnels.
+
+| TP | Machine | Page |
+| --- | --- | --- |
+| Antivirus ClamAV : installation, temps réel, planification, ClamUI | Poste Debian 13 (604) | [ClamAV](TP/ClamAV/ClamAV.md) |
+
 ## Environnement
 
 Les ressources qui me sont attribuées sur la plateforme Proxmox de la classe :
@@ -59,7 +67,8 @@ Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr
 ├── AP1/                            Services d'infrastructure
 │   ├── README.md
 │   └── GLPI/
-└── AP2/                            Interconnexion Proxmox et switchs
+├── AP2/                            Interconnexion Proxmox et switchs
+└── TP/                             TP de cours (ClamAV)
 ```
 
 ## Conventions
