@@ -2,28 +2,23 @@
 
 | | |
 | --- | --- |
-| **Énoncé** | [IT-Connect : Guide ClamAV, installer et configurer un antivirus sur Linux](https://www.it-connect.fr/guide-clamav-installer-et-configurer-un-antivirus-sur-linux/) |
-| **Machine** | [Poste Debian 13](../../Infrastructure/Client-Debian/Client-Debian.md) `CLIENT-DEBIAN-linux` (VMID 604), 10.2.81.5, bureau GNOME |
+| **Énoncé** | [IT-Connect : Guide ClamAV](https://www.it-connect.fr/guide-clamav-installer-et-configurer-un-antivirus-sur-linux/) |
+| **Machine** | [Poste Debian 13](../../Infrastructure/Client-Debian/Client-Debian.md), VM 604, 10.2.81.5 |
 | **Réalisé le** | 12/11/2026 |
-| **Résultat** | ClamAV installé et à jour, scan manuel, tri automatique de fichiers déposés, protection en temps réel, scan hebdomadaire planifié, interface graphique ClamUI |
 
-ClamAV est un antivirus libre fondé sur des signatures. Ce TP le met en place sur un poste Debian en suivant les sections du tutoriel dans l'ordre, puis ajoute en complément l'interface graphique ClamUI.
+Les étapes suivent le tutoriel dans l'ordre. Chaque test utilise le fichier **EICAR** : un faux virus inoffensif, reconnu par tous les antivirus. Toutes les commandes sont lancées en root (`su -`), sauf mention contraire.
 
-## 1. Composants mis en place
+| # | Étape | Résultat |
+| --- | --- | --- |
+| 1 | Installation et signatures | ClamAV 1.4.3, 3 628 258 signatures |
+| 2 | Démon `clamd` | Actif, signatures en mémoire |
+| 3 | Test EICAR | Détecté et supprimé |
+| 4 | Tri automatique des CV + cron | Fichier sain et fichier infecté triés |
+| 5 | Protection en temps réel | Fichier bloqué et mis en quarantaine dès son téléchargement |
+| 6 | Scan hebdomadaire | Programmé le dimanche à 2 h |
+| 7 | Interface ClamUI (complément) | Menace détectée depuis l'interface |
 
-| Composant | Rôle |
-| --- | --- |
-| `clamscan` | Scanner en ligne de commande : charge les signatures à chaque lancement |
-| `freshclam` (service `clamav-freshclam`) | Télécharge et maintient à jour les bases de signatures dans `/var/lib/clamav` |
-| `clamd` (service `clamav-daemon`) | Démon qui garde les signatures en mémoire et répond aux demandes de scan |
-| `clamonacc` (service `clamonacc`) | Scan à l'accès : surveille un dossier et transmet chaque fichier à `clamd` |
-| `scan_cvs.sh` + `cron` | Tri automatique de fichiers déposés, toutes les 15 minutes |
-| `scan-home-hebdo.timer` | Scan complet de `/home` chaque dimanche à 2 h |
-| ClamUI | Interface graphique (complément, hors tutoriel) |
-
-## 2. Installation et mise à jour des signatures
-
-Toutes les commandes sont lancées en root (`su -`) : le compte `minka` n'est pas membre du groupe `sudo`.
+## 1. Installation et signatures
 
 ```
 apt update
@@ -33,22 +28,22 @@ freshclam
 systemctl enable --now clamav-freshclam
 ```
 
-Le service `clamav-freshclam` est arrêté le temps de la première mise à jour manuelle, pour éviter que deux mises à jour ne s'exécutent en même temps. Les dépendances `clamav-base`, `clamav-freshclam`, `clamdscan` et `libclamav12` sont installées automatiquement.
+`freshclam` télécharge les bases de signatures dans `/var/lib/clamav`, puis le service `clamav-freshclam` les tient à jour automatiquement.
 
-![Installation des paquets](images/01-installation.png)
+![Installation](images/01-installation.png)
 
-## 3. Démon clamd
+## 2. Démon clamd
 
 ```
 systemctl enable --now clamav-daemon
-systemctl status clamav-daemon --no-pager
+systemctl status clamav-daemon
 ```
 
-Le démon est `active (running)` et activé au démarrage. Il communique par une socket locale, plus sûre qu'un port TCP puisqu'elle n'est pas joignable depuis le réseau.
+`clamd` garde les signatures en mémoire : les analyses sont immédiates, et c'est lui qu'utilisent le scan en temps réel et ClamUI.
 
-![clamav-daemon actif](images/02-clamd.png)
+![clamd actif](images/02-clamd.png)
 
-Vérifications du tutoriel, faites une fois tous les services en place :
+Vérifications du tutoriel :
 
 ```
 ls -al /var/lib/clamav/
@@ -56,34 +51,26 @@ ps -edf | grep clam
 clamonacc --help | head -5
 ```
 
-| Vérification | Résultat |
-| --- | --- |
-| Bases de signatures | `main.cvd` (89 Mo), `daily.cvd` (23 Mo), `bytecode.cvd` et `freshclam.dat`, appartenant à l'utilisateur `clamav` |
-| Processus | `freshclam -d` (mise à jour en tâche de fond) et `clamd` tournent sous le compte `clamav` ; `clamonacc` tourne sous root |
-| Binaire `clamonacc` | Présent, version 1.4.3, comme le moteur |
+Les bases `main.cvd`, `daily.cvd` et `bytecode.cvd` sont présentes. `freshclam` et `clamd` tournent sous le compte `clamav`, sans privilèges. Le binaire `clamonacc` est bien installé.
 
-Les démons de mise à jour et d'analyse tournent avec un compte dédié et sans privilèges (`clamav`) : en cas de faille, l'attaquant n'obtient pas les droits root. Seul `clamonacc` a besoin de root pour surveiller les accès aux fichiers.
+![Signatures, processus, clamonacc](images/03-verifications.png)
 
-![Signatures, processus et binaire clamonacc](images/02b-verifications.png)
-
-## 4. Premier test avec le fichier EICAR
-
-Le fichier EICAR est un faux virus standardisé, inoffensif, que tous les antivirus détectent. Il sert à tester une protection sans risque.
+## 3. Test EICAR
 
 ```
 wget -O eicar.txt https://secure.eicar.org/eicar.com.txt
 clamscan --infected --remove --recursive eicar.txt
 ```
 
-Résultat : `Infected files: 1`, le fichier est supprimé (`ls` ne le trouve plus). Le résumé montre **3 628 258 signatures** chargées et le **moteur 1.4.3**.
+`Infected files: 1` : le fichier est détecté puis supprimé.
 
-![Détection et suppression d'EICAR](images/03-eicar.png)
+![Détection EICAR](images/04-eicar.png)
 
-## 5. Tri automatique de fichiers déposés
+## 4. Tri automatique des CV
 
-Scénario du tutoriel : un site web dépose des CV dans `cv_incoming`. Un script les analyse et les range dans `cv_safe` ou `cv_infected`.
+Un site web dépose des CV dans `cv_incoming`. Le script les analyse et les range dans `cv_safe` (sain) ou `cv_infected` (infecté).
 
-Script `/usr/local/bin/scan_cvs.sh` :
+`/usr/local/bin/scan_cvs.sh` :
 
 ```bash
 #!/bin/bash
@@ -101,33 +88,31 @@ for file in "$INCOMING"/*; do
     echo "$(date '+%F %T') - $result" >> "$LOG"
     case "$ret" in
         0) mv -- "$file" "$SAFE"/ ;;      # sain
-        1) mv -- "$file" "$INFECTED"/ ;;  # virus trouvé
-        *) mv -- "$file" "$INFECTED"/ ;;  # erreur : quarantaine par prudence
+        1) mv -- "$file" "$INFECTED"/ ;;  # virus
+        *) mv -- "$file" "$INFECTED"/ ;;  # erreur : par prudence
     esac
 done
 ```
 
-Le tri repose sur le **code retour** de `clamscan` : 0 = sain, 1 = infecté, 2 = erreur. En cas d'erreur, le fichier est traité comme suspect.
+Test avec un fichier EICAR et un fichier sain : `eicar.txt` part dans `cv_infected`, `ok.txt` dans `cv_safe`.
 
-Test avec un fichier EICAR et un fichier sain : `eicar.txt` part dans `cv_infected`, `ok.txt` dans `cv_safe`, `cv_incoming` est vidé.
+![Tri des CV](images/05-tri-cv.png)
 
-![Avant et après le tri](images/04-tri-cv.png)
+Chaque analyse est tracée dans `/var/log/clamav/scan_cvs.log`.
 
-Chaque analyse est tracée dans `/var/log/clamav/scan_cvs.log` : `ok.txt: OK` et `Infected files: 1` pour l'EICAR.
+![Journal du tri](images/06-journal-cv.png)
 
-![Journal du tri](images/05-journal-cv.png)
-
-Planification toutes les 15 minutes (`crontab -e` en root) :
+Lancement automatique toutes les 15 minutes (`crontab -e`) :
 
 ```
 */15 * * * * flock -n /run/scan_cvs.lock /usr/local/bin/scan_cvs.sh
 ```
 
-`flock -n` empêche deux exécutions de se chevaucher si un scan dure plus de 15 minutes, comme le recommande le tutoriel.
+`flock -n` empêche deux scans de tourner en même temps.
 
-## 6. Protection en temps réel (clamonacc)
+## 5. Protection en temps réel
 
-Service `/etc/systemd/system/clamonacc.service` :
+`/etc/systemd/system/clamonacc.service` :
 
 ```ini
 [Unit]
@@ -145,7 +130,7 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-Lignes ajoutées à `/etc/clamav/clamd.conf` :
+Ajout dans `/etc/clamav/clamd.conf` :
 
 ```
 OnAccessPrevention yes
@@ -157,27 +142,17 @@ OnAccessExcludePath /dev
 OnAccessExcludePath /sys
 ```
 
-| Paramètre | Rôle |
-| --- | --- |
-| `OnAccessPrevention yes` | Bloque l'accès au fichier tant qu'il n'est pas analysé |
-| `OnAccessIncludePath` | Dossier surveillé, avec ses sous-dossiers |
-| `OnAccessExcludeUname clamav` | Évite que ClamAV s'analyse lui-même en boucle |
-| `OnAccessExcludeRootUID yes` | Ignore les accès faits par root |
-| `OnAccessExcludePath` | Exclut les pseudo-systèmes de fichiers `/proc`, `/dev`, `/sys` |
-| `--fdpass` | `clamd` reçoit le descripteur du fichier : il peut le lire même dans un dossier personnel |
-| `--move=/var/quarantine` | Déplace le fichier infecté dans une quarantaine en droits `700` |
+Le dossier Téléchargements est surveillé en permanence. Tout fichier infecté est déplacé dans `/var/quarantine` (droits `700`, accessible à root seulement).
 
-Le service est actif et surveille `/home/minka/Téléchargements`. La capture montre aussi la ligne de cron de la section 5.
+![clamonacc actif](images/07-clamonacc.png)
 
-![clamonacc actif](images/06-clamonacc.png)
+**Test**, fait en tant que `minka` : les accès root sont exclus (`OnAccessExcludeRootUID yes`). À gauche, `minka` télécharge le fichier EICAR. À droite, le journal montre la détection et le déplacement en quarantaine. Téléchargements est vide.
 
-**Test.** Le téléchargement est fait par **`minka`** et non par root : avec `OnAccessExcludeRootUID yes`, un fichier écrit par root ne serait pas analysé. À gauche, `minka` télécharge le fichier EICAR ; à droite, le journal montre la détection immédiate et le déplacement en quarantaine. Le dossier Téléchargements est vide (`total 0`), le fichier est dans `/var/quarantine`.
+![Détection en temps réel](images/08-temps-reel.png)
 
-![Détection en temps réel et quarantaine](images/07-temps-reel.png)
+## 6. Scan hebdomadaire
 
-## 7. Scan hebdomadaire de /home (timer systemd)
-
-Service `/etc/systemd/system/scan-home-hebdo.service` :
+`/etc/systemd/system/scan-home-hebdo.service` :
 
 ```ini
 [Unit]
@@ -193,7 +168,7 @@ ExecStart=/usr/bin/clamscan --recursive --infected --move=/var/quarantine --log=
 SuccessExitStatus=1
 ```
 
-Timer `/etc/systemd/system/scan-home-hebdo.timer` :
+`/etc/systemd/system/scan-home-hebdo.timer` :
 
 ```ini
 [Unit]
@@ -207,23 +182,20 @@ Persistent=true
 WantedBy=timers.target
 ```
 
-| Paramètre | Rôle |
-| --- | --- |
-| `Nice=19`, `IOSchedulingClass=idle` | Priorité la plus basse sur le processeur et le disque : le scan ne gêne pas l'utilisateur |
-| `--exclude-dir` | Exclut les caches des utilisateurs, inutiles à analyser |
-| `SuccessExitStatus=1` | Un virus trouvé (code 1) n'est pas un échec du service |
-| `OnCalendar` | Tous les dimanches à 2 h |
-| `Persistent=true` | Rattrape le scan au démarrage suivant si la machine était éteinte |
+```
+systemctl daemon-reload
+systemctl enable --now scan-home-hebdo.timer
+systemctl list-timers scan-home-hebdo.timer
+systemctl start scan-home-hebdo.service
+```
 
-Le timer est programmé pour le dimanche 15/11/2026 à 2 h. Un lancement manuel (`systemctl start scan-home-hebdo.service`) analyse 56 dossiers et 36 fichiers, sans infection : l'EICAR est déjà en quarantaine.
+Le scan tourne chaque dimanche à 2 h, en priorité basse (`Nice=19`) pour ne pas gêner l'utilisateur. `Persistent=true` le rattrape au démarrage si la machine était éteinte. Le lancement manuel analyse `/home` sans infection.
 
-![Timer et scan manuel](images/08-timer.png)
+![Timer et scan](images/09-timer.png)
 
-## 8. Complément : interface graphique ClamUI
+## 7. Complément : interface ClamUI
 
-[ClamUI](https://clamui.com/) est une interface graphique pour ClamAV. Elle n'embarque ni moteur ni signatures : elle pilote le ClamAV déjà installé. Elle n'est pas demandée par le tutoriel, qui la cite seulement en ressource.
-
-Installation par le paquet Flatpak publié sur [GitHub](https://github.com/linx-systems/clamui) (Flathub ne propose qu'une version plus ancienne), en tant que `minka` :
+[ClamUI](https://clamui.com/) est une interface graphique pour ClamAV. Elle n'est pas demandée par le tutoriel. Installation en tant que `minka` (paquet `flatpak` installé en root au préalable) :
 
 ```
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -231,30 +203,21 @@ flatpak install --user -y ./clamui-x86_64.flatpak
 flatpak run io.github.linx_systems.ClamUI
 ```
 
-Le paquet `flatpak` est installé au préalable en root. Le dépôt Flathub fournit seulement le runtime nécessaire à l'application.
+ClamUI utilise le démon `clamd` configuré plus haut (« Moteur : daemon »).
 
-L'interface utilise le démon `clamd` configuré plus haut (« Moteur : daemon ») et donne accès à l'analyse, la base virale, les journaux, la quarantaine, les statistiques et un audit de sécurité.
+![ClamUI](images/10-clamui.png)
 
-![Tableau de bord ClamUI](images/09-clamui.png)
+**Test** : un fichier EICAR créé dans `~/Documents/test-virus`, hors du dossier surveillé en temps réel, puis analyse du dossier `/home/minka/Documents` depuis l'interface. Résultat : 1 menace détectée, statut « Infecté ».
 
-Analyse de `/home/minka` depuis l'interface : 219 fichiers analysés, aucune menace.
+```
+echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > ~/Documents/test-virus/eicar.txt
+```
 
-![Analyse depuis ClamUI](images/10-clamui-scan.png)
+![Menace détectée dans ClamUI](images/11-clamui-menace.png)
 
-## 9. Écarts avec le tutoriel
+## 8. Questions pour l'oral
 
-| Tutoriel | Ici | Raison |
-| --- | --- | --- |
-| Commandes avec `sudo` | Commandes en root (`su -`) | `minka` n'est pas dans le groupe `sudo` |
-| Dossier surveillé `/home/flo/Téléchargements` | `/home/minka/Téléchargements` | Compte utilisateur de la machine |
-| Fichier EICAR créé avec `echo` | Téléchargé avec `wget` depuis eicar.org | Même fichier, sans risque d'erreur de saisie |
-| Dossier `cv_incoming` supposé existant | Créé avec `mkdir -p` | Le script ne crée que `cv_safe` et `cv_infected` |
-| Cron sans protection | `flock -n` ajouté | Applique le conseil du tutoriel sur les exécutions qui se chevauchent |
-
-## 10. Limites et questions pour l'oral
-
-- **Quelle différence entre `clamscan` et `clamd` ?** `clamscan` recharge les signatures à chaque lancement (une quinzaine de secondes ici). `clamd` les garde en mémoire, ce qui permet le scan en temps réel et les analyses rapides.
-- **Pourquoi le test en temps réel est-il fait par `minka` et pas par root ?** `OnAccessExcludeRootUID yes` exclut les accès root : un fichier écrit par root ne serait pas analysé.
-- **Pourquoi une quarantaine plutôt qu'une suppression ?** En cas de faux positif, le fichier peut être récupéré. La quarantaine est en droits `700` : seul root y accède.
-- **Pourquoi cron pour les CV et un timer systemd pour `/home` ?** Le tutoriel montre les deux méthodes. Le timer apporte en plus le rattrapage (`Persistent=true`), la priorité basse et les journaux de systemd.
-- **Quelles sont les limites de ClamAV ?** Il repose sur des signatures : il détecte mal les menaces très récentes (0-day) ou fortement obfusquées. Ce n'est pas un EDR, et les scans consomment du processeur sur de gros volumes.
+- **`clamscan` ou `clamd` ?** `clamscan` recharge les signatures à chaque lancement, ce qui prend une quinzaine de secondes. `clamd` les garde en mémoire.
+- **Pourquoi une quarantaine plutôt qu'une suppression ?** En cas de faux positif, le fichier peut être récupéré.
+- **Pourquoi le test en temps réel est-il fait par `minka` ?** Les accès root sont exclus de la surveillance.
+- **Limites de ClamAV ?** Il fonctionne par signatures : il détecte mal les menaces très récentes (0-day) ou obfusquées. Ce n'est pas un EDR.
