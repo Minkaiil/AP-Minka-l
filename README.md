@@ -8,7 +8,7 @@ L'entreprise fictive est le laboratoire pharmaceutique **RedOne**, décrit dans 
 
 Le travail se fait en trois temps :
 
-1. **[Infrastructure de base](Infrastructure/README.md)** : domaine Active Directory, DNS, second contrôleur, poste client et serveur de fichiers. C'est le socle commun aux deux ateliers.
+1. **[Infrastructure de base](Infrastructure/README.md)** : domaine Active Directory, DNS, second contrôleur, postes clients et serveur de fichiers. C'est le socle commun aux deux ateliers.
 2. **[AP 1](AP1/README.md)** : services d'infrastructure ajoutés sur ce socle (GLPI et un second service).
 3. **[AP 2](AP2/README.md)** : interconnexion de Proxmox et des switchs physiques, segmentation de bout en bout.
 
@@ -24,6 +24,7 @@ Le travail se fait en trois temps :
 | Infrastructure | Poste client Windows 11 | [Client-Windows11](Infrastructure/Client/Client-Windows11.md) | Réalisé |
 | Infrastructure | AD secondaire | [AD-secondaire](Infrastructure/AD-secondaire/AD-secondaire.md) | Réalisé |
 | Infrastructure | TrueNAS | [TrueNAS](Infrastructure/TrueNAS/TrueNAS.md) | Réalisé |
+| Infrastructure | Poste client Debian 13 (TP) | [Client-Debian](Infrastructure/Client-Debian/Client-Debian.md) | Réalisé |
 | Infrastructure | DHCP | à venir | Reporté |
 | AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | À venir |
 | AP 1 | Service complémentaire | à définir | À venir |
@@ -52,6 +53,7 @@ Hyperviseur : Proxmox VE 9, nœud `pve`, stockage des VM `Raid5-VMs`, pont `vmbr
 │   ├── Serveur/                    VM DC01, installation, réseau
 │   ├── Active-Directory/           AD DS, DNS, OU, comptes, scripts
 │   ├── Client/                     Poste Windows 11
+│   ├── Client-Debian/              Poste Debian 13 (TP)
 │   ├── AD-secondaire/              Second contrôleur DC02
 │   └── TrueNAS/                    Serveur de fichiers
 ├── AP1/                            Services d'infrastructure

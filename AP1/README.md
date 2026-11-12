@@ -25,4 +25,4 @@ Le domaine `redone.local`, son DNS, ses deux contrôleurs, le poste client et le
 | Domaine | `redone.local` |
 | DNS | 10.2.81.2 et 10.2.81.3 |
 | VLAN | 600, réseau 10.2.81.0/24, passerelle 10.2.81.1 |
-| VMID disponibles | 604 à 699 |
+| VMID disponibles | 605 à 699 |
