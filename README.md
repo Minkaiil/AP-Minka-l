@@ -27,7 +27,7 @@ Le travail se fait en trois temps :
 | Infrastructure | Poste client Debian 13 (TP) | [Client-Debian](Infrastructure/Client-Debian/Client-Debian.md) | Réalisé |
 | Infrastructure | DHCP | à venir | Reporté |
 | AP 1 | Partages des services et lecteur S: par GPO | [Partages-Services](AP1/Partages-Services/Partages-Services.md) | Réalisé |
-| AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | À venir |
+| AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | En cours |
 | AP 1 | Service complémentaire | à définir | À venir |
 | AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | À venir |
 

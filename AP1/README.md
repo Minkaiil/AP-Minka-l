@@ -17,7 +17,7 @@ Le domaine `redone.local`, son DNS, ses deux contrôleurs, le poste client et le
 | # | Chantier | Page | État |
 | --- | --- | --- | --- |
 | 1 | Partages des 10 services et lecteur `S:` par GPO | [Partages-Services](Partages-Services/Partages-Services.md) | Réalisé |
-| 2 | GLPI sur Debian, lié à l'annuaire | [GLPI](GLPI/GLPI.md) | À venir |
+| 2 | GLPI sur Debian, lié à l'annuaire | [GLPI](GLPI/GLPI.md) | En cours |
 | 3 | Service complémentaire | à définir | À venir |
 
 ## Prérequis
@@ -27,4 +27,4 @@ Le domaine `redone.local`, son DNS, ses deux contrôleurs, le poste client et le
 | Domaine | `redone.local` |
 | DNS | 10.2.81.2 et 10.2.81.3 |
 | VLAN | 600, réseau 10.2.81.0/24, passerelle 10.2.81.1 |
-| VMID disponibles | 605 à 699 |
+| VMID disponibles | 606 à 699 (605 : `SRV-GLPI`) |
