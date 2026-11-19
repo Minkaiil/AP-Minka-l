@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 2 |
 | **Objectif** | Déployer GLPI pour gérer le parc et les tickets d'incident, avec une authentification des utilisateurs par leur compte de domaine |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [comptes et groupes](../../Infrastructure/Active-Directory/Groupes-Comptes.md) |
-| **État** | **En cours** : annuaire, tickets et inventaire automatique opérationnels |
+| **État** | **Réalisé** : annuaire, tickets et inventaire automatique opérationnels |
 
 ## Plan
 
@@ -19,7 +19,7 @@
 | 6 | Déployer GLPI, configurer Apache | Réalisé |
 | 7 | Installation web, comptes par défaut | Réalisé |
 | 8 | Liaison à l'Active Directory (LDAP) | Réalisé |
-| 9 | Tests : connexion de domaine, ticket, inventaire | En cours |
+| 9 | Tests : connexion de domaine, ticket, inventaire | Réalisé |
 
 ## 1. Valeurs retenues
 
