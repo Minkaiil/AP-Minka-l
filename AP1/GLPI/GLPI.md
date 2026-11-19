@@ -3,64 +3,29 @@
 | | |
 | --- | --- |
 | **Atelier** | AP 1, chantier 2 |
-| **Objectif** | Déployer GLPI pour gérer le parc et les tickets d'incident, avec une authentification des utilisateurs par leur compte de domaine |
+| **Objectif** | Gérer le parc et les tickets d'incident, avec connexion des employés par leur compte de domaine |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [comptes et groupes](../../Infrastructure/Active-Directory/Groupes-Comptes.md) |
-| **État** | **En cours** : annuaire, tickets et inventaire automatique opérationnels |
-
-## Plan
-
-| # | Étape | État |
-| --- | --- | --- |
-| 1 | Créer la VM `SRV-GLPI` | Réalisé |
-| 2 | Installer Debian | Réalisé |
-| 3 | Réseau, nom et DNS | Réalisé |
-| 4 | Pile LAMP : Apache, MariaDB, PHP | Réalisé |
-| 5 | Sécuriser MariaDB, créer la base `glpi` | Réalisé |
-| 6 | Déployer GLPI, configurer Apache | Réalisé |
-| 7 | Installation web, comptes par défaut | Réalisé |
-| 8 | Liaison à l'Active Directory (LDAP) | Réalisé |
-| 9 | Tests : connexion de domaine, ticket, inventaire | En cours |
-
-## 1. Valeurs retenues
+| **Résultat** | GLPI 11 sur `http://srv-glpi.redone.local`, relié à l'annuaire, tickets traités, poste Windows inventorié automatiquement |
 
 | Paramètre | Valeur |
 | --- | --- |
-| Nom de la VM (Proxmox) | `SRV-GLPI`, VMID 605, pool `Minkail` |
-| Système | Debian 13.3, bureau Xfce |
-| Processeur, mémoire | 2 sockets × 2 cœurs (4 vCPU), 4 Gio |
-| Disque | 32 Gio sur `Raid5-VMs` (`discard`, `iothread`) |
-| Affichage | VirtIO-GPU, presse-papiers VNC |
-| Réseau | pont `vmbr2`, **VLAN 600**, VirtIO |
-| Nom | `srv-glpi.redone.local` |
-| Adresse IP | 10.2.81.6/24 (fixe), passerelle 10.2.81.1 |
-| DNS | 10.2.81.2 (`DC01`), puis 10.2.81.3 (`DC02`) |
-| Pile | Apache 2.4, MariaDB 11.8, PHP 8.4 |
-| GLPI | 11.0.11 |
-| Agent d'inventaire | GLPI Agent 1.21, sur le poste Windows 11 |
+| VM | `SRV-GLPI`, VMID 605, Debian 13.3 (bureau Xfce), 4 vCPU, 4 Gio, 32 Gio, VLAN 600 |
+| Réseau | `srv-glpi.redone.local`, 10.2.81.6/24, passerelle 10.2.81.1, DNS 10.2.81.2 et 10.2.81.3 |
+| Pile | Apache 2.4, MariaDB 11.8, PHP 8.4, GLPI 11.0.11 |
 | Annuaire | `dc01.redone.local:389`, réplique `dc02.redone.local:389`, compte de service `svc-glpi` |
-| Adresse web | `http://srv-glpi.redone.local` |
+| Inventaire | GLPI Agent 1.21 sur `CLIENT01` |
 
-## 2. Créer la machine virtuelle
+## 1. Le serveur
 
-Une VM dédiée : **un serveur, un rôle**. GLPI n'est installé ni sur un contrôleur de domaine (machine la plus sensible du réseau) ni sur un poste utilisateur.
+Une VM dédiée : **un serveur, un rôle**. GLPI n'est installé ni sur un contrôleur de domaine ni sur un poste utilisateur.
 
-![Récapitulatif de la VM](images/01-vm-confirmation.png)
+![VM SRV-GLPI](images/01-vm-confirmation.png)
 
-La carte graphique **VirtIO-GPU** et le presse-papiers **VNC** permettent le copier-coller depuis la console Proxmox.
+Debian avec **serveur SSH** et un bureau léger **Xfce**, utilisé seulement pour administrer depuis la console Proxmox avec le copier-coller (affichage VirtIO-GPU, presse-papiers VNC). En production, le serveur serait sans interface graphique.
 
-## 3. Installer Debian
+![Logiciels installés](images/02-logiciels.png)
 
-Installation graphique, nom `srv-glpi`, domaine `redone.local`. Logiciels : **bureau Xfce**, **serveur SSH** et utilitaires usuels.
-
-![Sélection des logiciels](images/02-logiciels.png)
-
-Le bureau léger Xfce sert uniquement à administrer le serveur depuis la console Proxmox du laboratoire, avec le copier-coller. En production, le serveur serait sans interface graphique et administré en SSH.
-
-![Bureau Xfce](images/03-bureau.png)
-
-## 4. Réseau, nom et DNS
-
-Avec un bureau, le réseau est géré par NetworkManager. Passage en adresse fixe :
+Adresse fixe avec NetworkManager :
 
 ```
 CON=$(nmcli -t -f NAME,DEVICE con show --active | grep ens18 | cut -d: -f1)
@@ -69,51 +34,25 @@ nmcli con up "$CON"
 sed -i 's/^127.0.1.1.*/10.2.81.6\tsrv-glpi.redone.local srv-glpi/' /etc/hosts
 ```
 
-Vérification : nom complet `srv-glpi.redone.local`, adresse `10.2.81.6/24` sans `dynamic`, passerelle `10.2.81.1`, DNS des deux contrôleurs, `DC01` et Internet joignables.
+![Réseau du serveur](images/03-reseau.png)
 
-![Réseau du serveur](images/04-reseau.png)
+Sur `DC01`, enregistrement **A** `srv-glpi` → `10.2.81.6` avec son **PTR**. Depuis `DC01`, le nom donne l'adresse et l'adresse donne le nom.
 
-Sur `DC01`, enregistrement **A** `srv-glpi` → `10.2.81.6`, avec son pointeur **PTR** dans la zone inversée.
+![Enregistrement DNS](images/04-dns.png)
 
-![Enregistrement DNS](images/05-dns.png)
+![Résolution directe et inverse](images/05-resolution.png)
 
-Test depuis `DC01` : le nom donne l'adresse et l'adresse donne le nom. (`Serveur : UnKnown` est normal : `DC01` s'interroge par son adresse IPv6 locale `::1`, qui n'a pas de nom inverse.)
-
-![Résolution directe et inverse](images/06-resolution.png)
-
-## 5. Pile LAMP
-
-GLPI est une application web : il lui faut un serveur web, PHP et une base de données.
+## 2. Pile LAMP et base de données
 
 ```
 apt install -y apache2 mariadb-server libapache2-mod-php php php-mysql php-mbstring php-curl php-gd php-xml php-intl php-ldap php-apcu php-zip php-bz2 php-bcmath
 ```
 
-| Extension PHP | Rôle |
-| --- | --- |
-| `mysql` | Connexion à la base MariaDB |
-| `ldap` | Authentification sur l'Active Directory |
-| `intl`, `mbstring` | Langues et caractères accentués |
-| `gd` | Images et graphiques |
-| `curl` | Échanges avec l'extérieur (vérification de version, agents) |
-| `apcu` | Cache en mémoire, pour les performances |
-| `xml`, `zip`, `bz2`, `bcmath` | Imports, archives, calculs |
+`php-mysql` relie PHP à la base, `php-ldap` permet l'authentification sur l'Active Directory. GLPI 11 demande PHP 8.2 au minimum : Debian 13 fournit la 8.4.
 
-**PHP 8.4.27** (GLPI 11 demande au minimum PHP 8.2), **Apache** et **MariaDB 11.8.6** sont actifs et lancés au démarrage.
+![Apache et MariaDB actifs](images/06-lamp.png)
 
-![Apache et MariaDB actifs](images/07-lamp.png)
-
-## 6. Sécuriser MariaDB et créer la base
-
-```
-mariadb-secure-installation
-```
-
-Suppression des utilisateurs anonymes, de la base `test` et de l'accès root à distance. Le compte root de MariaDB reste sans mot de passe : il n'est accessible qu'au root du système, par le socket local.
-
-![mariadb-secure-installation](images/08-mariadb-secure.png)
-
-Une base et un utilisateur dédiés, dont les droits se limitent à cette base (**moindre privilège**) :
+`mariadb-secure-installation` supprime les utilisateurs anonymes, la base de test et l'accès root à distance. Puis une base et un utilisateur dédiés, limités à cette base (**moindre privilège**) :
 
 ```
 mariadb -e "CREATE DATABASE glpi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -123,11 +62,9 @@ mariadb-tzinfo-to-sql /usr/share/zoneinfo | mariadb mysql
 mariadb -e "GRANT SELECT ON mysql.time_zone_name TO 'glpi'@'localhost'; FLUSH PRIVILEGES;"
 ```
 
-`utf8mb4` gère tous les caractères (accents, emojis). Les fuseaux horaires sont chargés pour que GLPI affiche les bonnes heures. L'utilisateur `glpi` n'est autorisé que depuis `localhost` : la base n'est pas joignable depuis le réseau.
+![Base glpi et utilisateurs](images/07-base.png)
 
-![Base glpi et utilisateurs](images/09-base.png)
-
-## 7. Déployer GLPI
+## 3. Déploiement de GLPI
 
 ```
 cd /tmp
@@ -135,7 +72,7 @@ wget https://github.com/glpi-project/glpi/releases/download/11.0.11/glpi-11.0.11
 tar -xzf glpi-11.0.11.tgz -C /var/www/
 ```
 
-**Configuration, données et journaux sont sortis du dossier web**, pour qu'aucun ne soit téléchargeable par une adresse web :
+La configuration, les données et les journaux sont **sortis du dossier web** : ils ne peuvent pas être téléchargés par une adresse web.
 
 | Dossier | Contenu |
 | --- | --- |
@@ -162,11 +99,9 @@ EOF
 chown -R www-data:www-data /var/www/glpi /etc/glpi /var/lib/glpi /var/log/glpi
 ```
 
-`downstream.php` indique à GLPI où trouver sa configuration ; `local_define.php` où ranger ses données et journaux. Le compte `www-data` (Apache) en est propriétaire. Le dossier `config` de GLPI 11 est livré vide : il n'y a rien à y déplacer.
+![Dossiers de GLPI](images/08-dossiers.png)
 
-![Dossiers de GLPI](images/10-dossiers.png)
-
-**Site Apache** : la racine publiée est **`/var/www/glpi/public`**, le reste du code n'est pas accessible depuis le navigateur.
+Site Apache : seul le dossier **`public`** est publié.
 
 ```
 cat > /etc/apache2/sites-available/glpi.conf <<'EOF'
@@ -190,55 +125,30 @@ sed -i 's/^session.cookie_httponly =.*/session.cookie_httponly = On/' /etc/php/8
 systemctl restart apache2
 ```
 
-| Élément | Rôle |
-| --- | --- |
-| `ServerName` | Le site répond au nom `srv-glpi.redone.local` |
-| `DocumentRoot .../public` | Seul le dossier public est servi |
-| `RewriteRule ... index.php` | Toutes les adresses passent par le point d'entrée unique de GLPI 11 |
-| `a2dissite 000-default` | Désactive la page par défaut d'Apache |
-| `session.cookie_httponly` | Le cookie de session n'est pas lisible par du JavaScript (protection contre le vol de session) |
+`session.cookie_httponly` empêche un script de lire le cookie de session (protection contre le vol de session).
 
-## 8. Installation web
+## 4. Installation web
 
-Depuis Firefox, `http://srv-glpi.redone.local` affiche l'assistant : DNS, Apache et PHP fonctionnent ensemble.
+Depuis `http://srv-glpi.redone.local`, l'assistant vérifie les prérequis : tous sont validés, dont la **sécurité des sessions** et l'**extension `ldap`**.
 
-![Page d'installation](images/11-accueil-installation.png)
+![Prérequis](images/09-prerequis.png)
 
-**Vérification des prérequis** : tous les tests sont validés, obligatoires, de sécurité et suggérés. On y retrouve la **configuration de sécurité des sessions** (`cookie_httponly`) et l'**extension `ldap`**, nécessaire à la liaison avec l'Active Directory.
+Connexion à la base avec l'utilisateur `glpi`, puis choix de la base `glpi`.
 
-![Prérequis (1/2)](images/12a-prerequis.png)
+![Choix de la base](images/10-choix-base.png)
 
-![Prérequis (2/2)](images/12b-prerequis.png)
+Après l'installation :
 
-**Connexion à la base** : serveur `localhost`, utilisateur `glpi`. La connexion réussit et la base `glpi` créée à l'étape 6 est sélectionnée.
+- données de démonstration désactivées ;
+- mot de passe du compte **`glpi`** (Super-Admin) changé ;
+- comptes **`tech`**, **`normal`** et **`post-only`** désactivés, les employés viendront de l'annuaire ;
+- compte **`glpi-system`** conservé : compte technique interne qui signe les actions automatiques.
 
-![Choix de la base](images/13-choix-base.png)
+![Tableau de bord](images/11-tableau-de-bord.png)
 
-L'installation se termine en listant les **quatre comptes par défaut** (`glpi`, `tech`, `normal`, `post-only`), dont les mots de passe sont connus de tous.
+## 5. Liaison à l'Active Directory
 
-![Fin de l'installation](images/14-fin-installation.png)
-
-Connexion avec le compte `glpi` : le tableau de bord s'affiche. GLPI signale lui-même que les mots de passe par défaut doivent être changés.
-
-![Tableau de bord](images/15-tableau-de-bord.png)
-
-
-Après la connexion :
-
-- les **données de démonstration** du tableau de bord sont désactivées : il affiche le vrai parc, vide pour l'instant ;
-- le mot de passe du compte **`glpi`** (Super-Admin) est changé ;
-- les comptes **`tech`**, **`normal`** et **`post-only`** sont **désactivés** : les vrais comptes viendront de l'annuaire ;
-- le compte **`glpi-system`** est conservé : c'est un compte technique interne qui signe les actions automatiques de GLPI.
-
-Le bandeau d'avertissement a disparu. La capture est prise depuis une machine Windows du domaine : `srv-glpi.redone.local` est résolu par tous les postes.
-
-![Tableau de bord après nettoyage](images/16-tableau-propre.png)
-
-## 9. Liaison à l'Active Directory
-
-### Compte de service
-
-Sur `DC01`, un compte dédié permet à GLPI de lire l'annuaire :
+Sur `DC01`, un **compte de service** en lecture seule, hors de l'OU importée :
 
 ```
 New-ADUser -Name "svc-glpi" -SamAccountName "svc-glpi" -UserPrincipalName "svc-glpi@redone.local" `
@@ -247,127 +157,80 @@ New-ADUser -Name "svc-glpi" -SamAccountName "svc-glpi" -UserPrincipalName "svc-g
   -Enabled $true -PasswordNeverExpires $true -CannotChangePassword $true
 ```
 
-C'est un **utilisateur simple**, membre d'aucun groupe d'administration : tout utilisateur du domaine peut lire l'annuaire, c'est tout ce dont GLPI a besoin. Il est rangé dans l'OU `Administration`, en dehors de l'OU `Utilisateurs` importée par GLPI. Son mot de passe n'expire pas, pour que la liaison ne casse pas du jour au lendemain.
+![Compte svc-glpi](images/12-svc-glpi.png)
 
-![Compte svc-glpi](images/17-svc-glpi.png)
-
-### Annuaire LDAP dans GLPI
-
-*Configuration > Authentification > Annuaires LDAP > Ajouter* :
+Dans GLPI, *Configuration > Authentification > Annuaires LDAP* :
 
 | Champ | Valeur | Pourquoi |
 | --- | --- | --- |
-| Serveur, port | `dc01.redone.local`, `389` | Contrôleur de domaine, port LDAP |
-| Filtre de connexion | `(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))` | Uniquement les personnes, comptes désactivés exclus |
-| BaseDN | `OU=Utilisateurs,DC=redone,DC=local` | Seuls les employés sont visibles, pas les comptes d'administration ni de service |
-| DN du compte | `svc-glpi@redone.local` | Compte de service en lecture |
-| Champ de l'identifiant | `samaccountname` | L'employé se connecte avec son identifiant Windows (`adavid`) |
-| Champ de synchronisation | `objectguid` | Identifiant unique et permanent : un compte renommé reste le même dans GLPI |
+| Serveur, port | `dc01.redone.local`, `389` | Contrôleur de domaine |
+| Filtre | `(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))` | Personnes seulement, comptes désactivés exclus |
+| BaseDN | `OU=Utilisateurs,DC=redone,DC=local` | Seuls les employés, pas les comptes d'administration ni de service |
+| DN du compte | `svc-glpi@redone.local` | Compte de service |
+| Identifiant | `samaccountname` | Connexion avec l'identifiant Windows |
+| Synchronisation | `objectguid` | Identifiant permanent, même si le compte est renommé |
 
-![Configuration de l'annuaire](images/18-ldap-config.png)
+![Configuration de l'annuaire](images/13-ldap-config.png)
 
-Le test valide les cinq points : connexion TCP au port 389, BaseDN, adresse LDAP, authentification du compte de service et recherche, qui trouve **30 entrées**, les 30 employés.
+Le test valide la connexion, l'authentification du compte de service et trouve **30 entrées**, les 30 employés.
 
-![Test de l'annuaire](images/19-ldap-test.png)
+![Test de l'annuaire](images/14-ldap-test.png)
 
-**Réplique** : `dc02.redone.local:389`. Si `DC01` est arrêté, GLPI interroge `DC02` et les utilisateurs peuvent toujours se connecter.
+**Réplique** `dc02.redone.local` : si `DC01` est arrêté, les connexions passent par `DC02`.
 
-![Réplique DC02](images/20-replicat.png)
+![Réplique DC02](images/15-replicat.png)
 
-### Profil des utilisateurs importés
+Une **règle d'affectation d'habilitations** donne à tout utilisateur venant de l'annuaire le profil **Self-Service** (créer et suivre ses tickets) sur l'entité racine.
 
-Un compte importé sans habilitation ne peut pas se connecter. Une règle d'affectation d'habilitations (*Administration > Règles*) donne à tout utilisateur venant de l'annuaire le profil **Self-Service** sur l'entité racine : il peut créer et suivre ses propres tickets, rien d'autre.
+![Règle Self-Service](images/16-regle.png)
 
-![Critère de la règle](images/21a-regle-critere.png)
+Import des comptes (*Liaison annuaire LDAP*) : 30 employés, avec nom et adresse e-mail venus de l'annuaire.
 
-![Actions de la règle](images/21b-regle-actions.png)
+![Utilisateurs importés](images/17-import.png)
 
-Le profil Self-Service est volontairement le plus restreint (**moindre privilège**) : les droits supplémentaires sont donnés au cas par cas, par exemple aux techniciens.
+`adavid` se connecte avec **son identifiant et son mot de passe Windows** (source *AD redone.local*) et arrive sur l'interface simplifiée. Aucun mot de passe d'employé n'est stocké dans GLPI. Le compte `glpi`, lui, se connecte sur la *Base interne GLPI* : il reste utilisable même si l'annuaire est indisponible.
 
-### Import et connexion
+![Connexion de adavid](images/18-connexion-adavid.png)
 
-Import des comptes depuis la page *Liaison annuaire LDAP* (`/front/ldap.php`) : la liste compte **35 utilisateurs**, les 30 employés et les 5 comptes internes de GLPI. Nom, prénom et adresse e-mail viennent de l'annuaire.
+## 6. Traitement d'un ticket
 
-![Utilisateurs importés](images/22-import.png)
+`khaddad` (responsable `Reseau-Systeme`) reçoit en plus le profil **Technician**.
 
-**Test** : `adavid` se connecte avec **son identifiant et son mot de passe Windows**. GLPI vérifie le mot de passe auprès de l'Active Directory et affiche l'interface simplifiée du profil Self-Service : signaler un incident, demander un service, suivre ses tickets.
+![Habilitations de khaddad](images/19-habilitations-khaddad.png)
 
-![Connexion de adavid](images/23-connexion-adavid.png)
+1. **`adavid` déclare** l'incident « Imprimante de l'accueil hors service » : statut **Nouveau**.
 
-Aucun mot de passe n'est stocké dans GLPI pour les employés : un changement de mot de passe dans l'annuaire s'applique immédiatement à GLPI.
+![Ticket créé](images/20-ticket-cree.png)
 
-## 10. Traiter un ticket de bout en bout
+2. **`khaddad` prend en charge** : il est technicien attribué, le ticket passe **En cours**.
 
-### Un technicien
+![Ticket attribué](images/21-ticket-attribue.png)
 
-`khaddad` (Karim Haddad, responsable du service `Reseau-Systeme`) reçoit en plus le profil **Technician** sur l'entité racine, en récursif. Il garde le profil Self-Service donné par la règle (marqué **D**, dynamique) ; le profil Technician est ajouté à la main (**R**, récursif).
+3. **`khaddad` résout** : un suivi (« intervention sur place prévue »), puis une solution (« bourrage papier retiré, imprimante testée »). Le ticket passe **Résolu**. Le demandeur peut ensuite approuver la solution, ce qui le **clôt**.
 
-![Habilitations de khaddad](images/24-habilitations-khaddad.png)
+![Ticket résolu](images/22-ticket-resolu.png)
 
-### 1. L'utilisateur déclare
+## 7. Inventaire automatique
 
-`adavid` (Accueil) signale un incident depuis l'interface simplifiée : **« Imprimante de l'accueil hors service »**. Le ticket est créé avec le statut **Nouveau**.
+*Administration > Inventaire* : **Activer l'inventaire**.
 
-![Ticket créé par adavid](images/25-ticket-cree.png)
+![Inventaire activé](images/23-inventaire-active.png)
 
-### 2. Le technicien prend en charge
+**GLPI Agent 1.21** est installé sur `CLIENT01` (installation *Typical*), avec la cible `http://srv-glpi.redone.local/`. Il envoie un inventaire au démarrage puis toutes les 24 heures.
 
-`khaddad` se connecte avec son compte de domaine (source de connexion **AD redone.local**) et arrive sur l'interface complète du profil Technician.
+![Cible de l'agent](images/24-agent-cible.png)
 
-![Connexion de khaddad](images/26-connexion-khaddad.png)
+`CLIENT01` apparaît dans *Parc > Ordinateurs* **sans aucune saisie** : modèle (VM QEMU), Windows 11 Professionnel, processeur ; la fiche détaille composants et logiciels. Le premier inventaire a révélé que le nom Windows ne suivait pas le plan (`adavid`) : le poste a été renommé `CLIENT01`, et GLPI a mis à jour la même fiche, car il reconnaît la machine par son identifiant matériel.
 
-Il s'attribue le ticket : le demandeur est `adavid`, le technicien attribué **Haddad Karim**, et le ticket passe **En cours**.
+![Ordinateur inventorié](images/25-ordinateur-inventorie.png)
 
-![Ticket attribué](images/27-ticket-attribue.png)
+## 8. Questions pour l'oral
 
-### 3. Le technicien résout
-
-Il ajoute un **suivi** (« intervention sur place prévue »), puis une **solution** (« bourrage papier retiré, imprimante testée »). Le ticket passe au statut **Résolu**, avec sa date de résolution. Toute l'histoire du ticket se lit de haut en bas : demande, suivi, solution.
-
-![Ticket résolu](images/28-ticket-resolu.png)
-
-## 11. Inventaire automatique du parc
-
-### Activer l'inventaire
-
-*Administration > Inventaire* : **Activer l'inventaire**. GLPI accepte alors les données envoyées par les agents : volumes, logiciels, moniteurs, imprimantes, antivirus, processeurs, mémoire, disques…
-
-![Inventaire activé](images/29-inventaire-active.png)
-
-### Installer l'agent sur le poste Windows 11
-
-L'agent est téléchargé depuis la page officielle du projet (`github.com/glpi-project/glpi-agent`), version **1.21**, installation **Typical** (agent et tâche d'inventaire). Seule la cible change : **Remote Targets** = `http://srv-glpi.redone.local/`.
-
-![Cible de l'agent](images/30-agent-cible.png)
-
-![Agent installé](images/31-agent-installe.png)
-
-L'agent s'installe comme un service Windows : il envoie un inventaire au démarrage puis toutes les 24 heures (*Fréquence de l'inventaire*). Un inventaire peut être forcé depuis `http://127.0.0.1:62354`, sur le poste.
-
-### Résultat
-
-Le poste **`CLIENT01`** apparaît dans *Parc > Ordinateurs* **sans aucune saisie** : nom, fabricant et modèle (une machine virtuelle QEMU), système **Windows 11 Professionnel**, processeur, date du dernier inventaire. Sa fiche détaille les composants et les logiciels installés.
-
-![Ordinateur inventorié](images/32-ordinateur-inventorie.png)
-
-Le premier inventaire a révélé que le nom Windows du poste ne correspondait pas au plan (`adavid` au lieu de `CLIENT01`). Le poste a été renommé ; au rapport suivant, GLPI a **mis à jour la fiche existante** au lieu d'en créer une seconde, car il reconnaît la machine par son identifiant matériel. L'ancien enregistrement DNS a été supprimé.
-
-## Questions pour l'oral
-
-- **Pourquoi une VM dédiée ?** Un serveur, un rôle : une faille dans GLPI n'expose ni l'annuaire ni un poste utilisateur.
-- **Pourquoi un enregistrement DNS ?** Les utilisateurs ouvrent `http://srv-glpi.redone.local` au lieu d'une adresse IP ; si l'adresse change, seul le DNS est à modifier.
-- **Pourquoi un compte de service LDAP en lecture seule plutôt qu'un administrateur du domaine ?** Si son mot de passe fuite, l'attaquant peut seulement lire l'annuaire.
-- **Pourquoi LDAPS est-il préférable à LDAP ?** LDAP circule en clair sur le port 389 ; LDAPS chiffre les échanges sur le port 636.
+- **Pourquoi une VM dédiée ?** Une faille dans GLPI n'expose ni l'annuaire ni un poste utilisateur.
 - **Pourquoi sortir la configuration du dossier web ?** Le fichier de connexion à la base contient un mot de passe : hors du dossier publié, il ne peut pas être téléchargé.
-- **Pourquoi un utilisateur SQL dédié ?** Moindre privilège : s'il est compromis, seule la base `glpi` est exposée.
-- **Pourquoi « Non sécurisé » dans le navigateur ?** Le site est en HTTP : les échanges, mots de passe compris, circulent en clair. En production, on activerait HTTPS avec un certificat.
-- **Pourquoi `objectguid` comme champ de synchronisation ?** Il ne change jamais, même si le compte est renommé ou déplacé dans l'annuaire.
-- **Pourquoi une réplique ?** La connexion à GLPI ne dépend plus d'un seul contrôleur de domaine.
-- **Pourquoi le profil Self-Service par défaut ?** Moindre privilège : un employé n'a besoin que de créer et suivre ses tickets.
-- **Quelle différence entre Résolu et Clos ?** Résolu : le technicien a apporté une solution. Clos : le demandeur l'a validée (ou le délai de validation est dépassé). Le ticket ne peut plus évoluer.
-- **Quelle différence entre un suivi et une solution ?** Le suivi trace un échange ou une action en cours ; la solution clôt le traitement et fait passer le ticket en Résolu.
-- **Pourquoi un agent plutôt qu'une saisie manuelle ?** L'inventaire est complet, toujours à jour (envoi automatique toutes les 24 heures) et sans erreur de saisie.
-- **Pourquoi le compte `glpi` se connecte-t-il sur la « Base interne GLPI » ?** C'est un compte local, indépendant de l'annuaire : si les contrôleurs de domaine sont arrêtés, l'administrateur peut toujours se connecter pour dépanner.
-- **Quelle différence entre inventaire du parc et gestion des tickets ?** Le parc recense ce que l'entreprise possède ; les tickets suivent les incidents et demandes des utilisateurs.
-
-Les mots de passe de la base et du compte LDAP ne sont pas publiés dans ce dépôt.
+- **Pourquoi un compte de service simple ?** S'il fuite, il permet seulement de lire l'annuaire. Un administrateur du domaine serait une faille majeure.
+- **Pourquoi `objectguid` ?** Il ne change jamais, même si le compte est renommé ou déplacé.
+- **Pourquoi Self-Service par défaut ?** Moindre privilège : les droits supplémentaires sont donnés au cas par cas, comme à `khaddad`.
+- **Résolu ou Clos ?** Résolu : le technicien a apporté une solution. Clos : le demandeur l'a validée.
+- **Pourquoi « Non sécurisé » ?** Le site est en HTTP, les mots de passe circulent en clair. En production : HTTPS avec un certificat, et LDAPS (port 636) vers l'annuaire.
+- **Parc ou tickets ?** Le parc recense ce que l'entreprise possède ; les tickets suivent les incidents et demandes.
