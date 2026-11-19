@@ -346,9 +346,11 @@ L'agent s'installe comme un service Windows : il envoie un inventaire au démarr
 
 ### Résultat
 
-Le poste apparaît dans *Parc > Ordinateurs* **sans aucune saisie** : nom, fabricant et modèle (une machine virtuelle QEMU), système **Windows 11 Professionnel**, processeur, date du dernier inventaire. Sa fiche détaille les composants et les logiciels installés.
+Le poste **`CLIENT01`** apparaît dans *Parc > Ordinateurs* **sans aucune saisie** : nom, fabricant et modèle (une machine virtuelle QEMU), système **Windows 11 Professionnel**, processeur, date du dernier inventaire. Sa fiche détaille les composants et les logiciels installés.
 
 ![Ordinateur inventorié](images/32-ordinateur-inventorie.png)
+
+Le premier inventaire a révélé que le nom Windows du poste ne correspondait pas au plan (`adavid` au lieu de `CLIENT01`). Le poste a été renommé ; au rapport suivant, GLPI a **mis à jour la fiche existante** au lieu d'en créer une seconde, car il reconnaît la machine par son identifiant matériel. L'ancien enregistrement DNS a été supprimé.
 
 ## Questions pour l'oral
 
