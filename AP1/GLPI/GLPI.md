@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 2 |
 | **Objectif** | Déployer GLPI pour gérer le parc et les tickets d'incident, avec une authentification des utilisateurs par leur compte de domaine |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [comptes et groupes](../../Infrastructure/Active-Directory/Groupes-Comptes.md) |
-| **État** | **En cours** : GLPI relié à l'Active Directory, cycle de vie d'un ticket testé ; reste l'inventaire automatique |
+| **État** | **En cours** : annuaire, tickets et inventaire automatique opérationnels |
 
 ## Plan
 
@@ -36,6 +36,7 @@
 | DNS | 10.2.81.2 (`DC01`), puis 10.2.81.3 (`DC02`) |
 | Pile | Apache 2.4, MariaDB 11.8, PHP 8.4 |
 | GLPI | 11.0.11 |
+| Agent d'inventaire | GLPI Agent 1.21, sur le poste Windows 11 |
 | Annuaire | `dc01.redone.local:389`, réplique `dc02.redone.local:389`, compte de service `svc-glpi` |
 | Adresse web | `http://srv-glpi.redone.local` |
 
@@ -325,6 +326,30 @@ Il ajoute un **suivi** (« intervention sur place prévue »), puis une **soluti
 
 ![Ticket résolu](images/28-ticket-resolu.png)
 
+## 11. Inventaire automatique du parc
+
+### Activer l'inventaire
+
+*Administration > Inventaire* : **Activer l'inventaire**. GLPI accepte alors les données envoyées par les agents : volumes, logiciels, moniteurs, imprimantes, antivirus, processeurs, mémoire, disques…
+
+![Inventaire activé](images/29-inventaire-active.png)
+
+### Installer l'agent sur le poste Windows 11
+
+L'agent est téléchargé depuis la page officielle du projet (`github.com/glpi-project/glpi-agent`), version **1.21**, installation **Typical** (agent et tâche d'inventaire). Seule la cible change : **Remote Targets** = `http://srv-glpi.redone.local/`.
+
+![Cible de l'agent](images/30-agent-cible.png)
+
+![Agent installé](images/31-agent-installe.png)
+
+L'agent s'installe comme un service Windows : il envoie un inventaire au démarrage puis toutes les 24 heures (*Fréquence de l'inventaire*). Un inventaire peut être forcé depuis `http://127.0.0.1:62354`, sur le poste.
+
+### Résultat
+
+Le poste apparaît dans *Parc > Ordinateurs* **sans aucune saisie** : nom, fabricant et modèle (une machine virtuelle QEMU), système **Windows 11 Professionnel**, processeur, date du dernier inventaire. Sa fiche détaille les composants et les logiciels installés.
+
+![Ordinateur inventorié](images/32-ordinateur-inventorie.png)
+
 ## Questions pour l'oral
 
 - **Pourquoi une VM dédiée ?** Un serveur, un rôle : une faille dans GLPI n'expose ni l'annuaire ni un poste utilisateur.
@@ -339,6 +364,8 @@ Il ajoute un **suivi** (« intervention sur place prévue »), puis une **soluti
 - **Pourquoi le profil Self-Service par défaut ?** Moindre privilège : un employé n'a besoin que de créer et suivre ses tickets.
 - **Quelle différence entre Résolu et Clos ?** Résolu : le technicien a apporté une solution. Clos : le demandeur l'a validée (ou le délai de validation est dépassé). Le ticket ne peut plus évoluer.
 - **Quelle différence entre un suivi et une solution ?** Le suivi trace un échange ou une action en cours ; la solution clôt le traitement et fait passer le ticket en Résolu.
+- **Pourquoi un agent plutôt qu'une saisie manuelle ?** L'inventaire est complet, toujours à jour (envoi automatique toutes les 24 heures) et sans erreur de saisie.
+- **Pourquoi le compte `glpi` se connecte-t-il sur la « Base interne GLPI » ?** C'est un compte local, indépendant de l'annuaire : si les contrôleurs de domaine sont arrêtés, l'administrateur peut toujours se connecter pour dépanner.
 - **Quelle différence entre inventaire du parc et gestion des tickets ?** Le parc recense ce que l'entreprise possède ; les tickets suivent les incidents et demandes des utilisateurs.
 
 Les mots de passe de la base et du compte LDAP ne sont pas publiés dans ce dépôt.
