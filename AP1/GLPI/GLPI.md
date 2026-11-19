@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 2 |
 | **Objectif** | Déployer GLPI pour gérer le parc et les tickets d'incident, avec une authentification des utilisateurs par leur compte de domaine |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [comptes et groupes](../../Infrastructure/Active-Directory/Groupes-Comptes.md) |
-| **État** | **En cours** : GLPI 11 installé et accessible (étapes 1 à 7) |
+| **État** | **En cours** : GLPI 11 installé et relié à l'Active Directory (étapes 1 à 8) |
 
 ## Plan
 
@@ -18,7 +18,7 @@
 | 5 | Sécuriser MariaDB, créer la base `glpi` | Réalisé |
 | 6 | Déployer GLPI, configurer Apache | Réalisé |
 | 7 | Installation web, comptes par défaut | Réalisé |
-| 8 | Liaison à l'Active Directory (LDAP) | À faire |
+| 8 | Liaison à l'Active Directory (LDAP) | Réalisé |
 | 9 | Tests : connexion de domaine, ticket, inventaire | À faire |
 
 ## 1. Valeurs retenues
@@ -36,6 +36,7 @@
 | DNS | 10.2.81.2 (`DC01`), puis 10.2.81.3 (`DC02`) |
 | Pile | Apache 2.4, MariaDB 11.8, PHP 8.4 |
 | GLPI | 11.0.11 |
+| Annuaire | `dc01.redone.local:389`, réplique `dc02.redone.local:389`, compte de service `svc-glpi` |
 | Adresse web | `http://srv-glpi.redone.local` |
 
 ## 2. Créer la machine virtuelle
@@ -220,6 +221,80 @@ Connexion avec le compte `glpi` : le tableau de bord s'affiche. GLPI signale lui
 
 ![Tableau de bord](images/15-tableau-de-bord.png)
 
+
+Après la connexion :
+
+- les **données de démonstration** du tableau de bord sont désactivées : il affiche le vrai parc, vide pour l'instant ;
+- le mot de passe du compte **`glpi`** (Super-Admin) est changé ;
+- les comptes **`tech`**, **`normal`** et **`post-only`** sont **désactivés** : les vrais comptes viendront de l'annuaire ;
+- le compte **`glpi-system`** est conservé : c'est un compte technique interne qui signe les actions automatiques de GLPI.
+
+Le bandeau d'avertissement a disparu. La capture est prise depuis une machine Windows du domaine : `srv-glpi.redone.local` est résolu par tous les postes.
+
+![Tableau de bord après nettoyage](images/16-tableau-propre.png)
+
+## 9. Liaison à l'Active Directory
+
+### Compte de service
+
+Sur `DC01`, un compte dédié permet à GLPI de lire l'annuaire :
+
+```
+New-ADUser -Name "svc-glpi" -SamAccountName "svc-glpi" -UserPrincipalName "svc-glpi@redone.local" `
+  -Path "OU=Administration,DC=redone,DC=local" `
+  -AccountPassword (ConvertTo-SecureString "<mot_de_passe>" -AsPlainText -Force) `
+  -Enabled $true -PasswordNeverExpires $true -CannotChangePassword $true
+```
+
+C'est un **utilisateur simple**, membre d'aucun groupe d'administration : tout utilisateur du domaine peut lire l'annuaire, c'est tout ce dont GLPI a besoin. Il est rangé dans l'OU `Administration`, en dehors de l'OU `Utilisateurs` importée par GLPI. Son mot de passe n'expire pas, pour que la liaison ne casse pas du jour au lendemain.
+
+![Compte svc-glpi](images/17-svc-glpi.png)
+
+### Annuaire LDAP dans GLPI
+
+*Configuration > Authentification > Annuaires LDAP > Ajouter* :
+
+| Champ | Valeur | Pourquoi |
+| --- | --- | --- |
+| Serveur, port | `dc01.redone.local`, `389` | Contrôleur de domaine, port LDAP |
+| Filtre de connexion | `(&(objectClass=user)(objectCategory=person)(!(userAccountControl:1.2.840.113556.1.4.803:=2)))` | Uniquement les personnes, comptes désactivés exclus |
+| BaseDN | `OU=Utilisateurs,DC=redone,DC=local` | Seuls les employés sont visibles, pas les comptes d'administration ni de service |
+| DN du compte | `svc-glpi@redone.local` | Compte de service en lecture |
+| Champ de l'identifiant | `samaccountname` | L'employé se connecte avec son identifiant Windows (`adavid`) |
+| Champ de synchronisation | `objectguid` | Identifiant unique et permanent : un compte renommé reste le même dans GLPI |
+
+![Configuration de l'annuaire](images/18-ldap-config.png)
+
+Le test valide les cinq points : connexion TCP au port 389, BaseDN, adresse LDAP, authentification du compte de service et recherche, qui trouve **30 entrées**, les 30 employés.
+
+![Test de l'annuaire](images/19-ldap-test.png)
+
+**Réplique** : `dc02.redone.local:389`. Si `DC01` est arrêté, GLPI interroge `DC02` et les utilisateurs peuvent toujours se connecter.
+
+![Réplique DC02](images/20-replicat.png)
+
+### Profil des utilisateurs importés
+
+Un compte importé sans habilitation ne peut pas se connecter. Une règle d'affectation d'habilitations (*Administration > Règles*) donne à tout utilisateur venant de l'annuaire le profil **Self-Service** sur l'entité racine : il peut créer et suivre ses propres tickets, rien d'autre.
+
+![Critère de la règle](images/21a-regle-critere.png)
+
+![Actions de la règle](images/21b-regle-actions.png)
+
+Le profil Self-Service est volontairement le plus restreint (**moindre privilège**) : les droits supplémentaires sont donnés au cas par cas, par exemple aux techniciens.
+
+### Import et connexion
+
+Import des comptes depuis la page *Liaison annuaire LDAP* (`/front/ldap.php`) : la liste compte **35 utilisateurs**, les 30 employés et les 5 comptes internes de GLPI. Nom, prénom et adresse e-mail viennent de l'annuaire.
+
+![Utilisateurs importés](images/22-import.png)
+
+**Test** : `adavid` se connecte avec **son identifiant et son mot de passe Windows**. GLPI vérifie le mot de passe auprès de l'Active Directory et affiche l'interface simplifiée du profil Self-Service : signaler un incident, demander un service, suivre ses tickets.
+
+![Connexion de adavid](images/23-connexion-adavid.png)
+
+Aucun mot de passe n'est stocké dans GLPI pour les employés : un changement de mot de passe dans l'annuaire s'applique immédiatement à GLPI.
+
 ## Questions pour l'oral
 
 - **Pourquoi une VM dédiée ?** Un serveur, un rôle : une faille dans GLPI n'expose ni l'annuaire ni un poste utilisateur.
@@ -229,6 +304,9 @@ Connexion avec le compte `glpi` : le tableau de bord s'affiche. GLPI signale lui
 - **Pourquoi sortir la configuration du dossier web ?** Le fichier de connexion à la base contient un mot de passe : hors du dossier publié, il ne peut pas être téléchargé.
 - **Pourquoi un utilisateur SQL dédié ?** Moindre privilège : s'il est compromis, seule la base `glpi` est exposée.
 - **Pourquoi « Non sécurisé » dans le navigateur ?** Le site est en HTTP : les échanges, mots de passe compris, circulent en clair. En production, on activerait HTTPS avec un certificat.
+- **Pourquoi `objectguid` comme champ de synchronisation ?** Il ne change jamais, même si le compte est renommé ou déplacé dans l'annuaire.
+- **Pourquoi une réplique ?** La connexion à GLPI ne dépend plus d'un seul contrôleur de domaine.
+- **Pourquoi le profil Self-Service par défaut ?** Moindre privilège : un employé n'a besoin que de créer et suivre ses tickets.
 - **Quelle différence entre inventaire du parc et gestion des tickets ?** Le parc recense ce que l'entreprise possède ; les tickets suivent les incidents et demandes des utilisateurs.
 
 Les mots de passe de la base et du compte LDAP ne sont pas publiés dans ce dépôt.
