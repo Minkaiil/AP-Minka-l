@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 2 |
 | **Objectif** | Déployer GLPI pour gérer le parc et les tickets d'incident, avec une authentification des utilisateurs par leur compte de domaine |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [comptes et groupes](../../Infrastructure/Active-Directory/Groupes-Comptes.md) |
-| **État** | **En cours** : GLPI 11 installé et relié à l'Active Directory (étapes 1 à 8) |
+| **État** | **En cours** : GLPI relié à l'Active Directory, cycle de vie d'un ticket testé ; reste l'inventaire automatique |
 
 ## Plan
 
@@ -19,7 +19,7 @@
 | 6 | Déployer GLPI, configurer Apache | Réalisé |
 | 7 | Installation web, comptes par défaut | Réalisé |
 | 8 | Liaison à l'Active Directory (LDAP) | Réalisé |
-| 9 | Tests : connexion de domaine, ticket, inventaire | À faire |
+| 9 | Tests : connexion de domaine, ticket, inventaire | En cours |
 
 ## 1. Valeurs retenues
 
@@ -295,6 +295,36 @@ Import des comptes depuis la page *Liaison annuaire LDAP* (`/front/ldap.php`) : 
 
 Aucun mot de passe n'est stocké dans GLPI pour les employés : un changement de mot de passe dans l'annuaire s'applique immédiatement à GLPI.
 
+## 10. Traiter un ticket de bout en bout
+
+### Un technicien
+
+`khaddad` (Karim Haddad, responsable du service `Reseau-Systeme`) reçoit en plus le profil **Technician** sur l'entité racine, en récursif. Il garde le profil Self-Service donné par la règle (marqué **D**, dynamique) ; le profil Technician est ajouté à la main (**R**, récursif).
+
+![Habilitations de khaddad](images/24-habilitations-khaddad.png)
+
+### 1. L'utilisateur déclare
+
+`adavid` (Accueil) signale un incident depuis l'interface simplifiée : **« Imprimante de l'accueil hors service »**. Le ticket est créé avec le statut **Nouveau**.
+
+![Ticket créé par adavid](images/25-ticket-cree.png)
+
+### 2. Le technicien prend en charge
+
+`khaddad` se connecte avec son compte de domaine (source de connexion **AD redone.local**) et arrive sur l'interface complète du profil Technician.
+
+![Connexion de khaddad](images/26-connexion-khaddad.png)
+
+Il s'attribue le ticket : le demandeur est `adavid`, le technicien attribué **Haddad Karim**, et le ticket passe **En cours**.
+
+![Ticket attribué](images/27-ticket-attribue.png)
+
+### 3. Le technicien résout
+
+Il ajoute un **suivi** (« intervention sur place prévue »), puis une **solution** (« bourrage papier retiré, imprimante testée »). Le ticket passe au statut **Résolu**, avec sa date de résolution. Toute l'histoire du ticket se lit de haut en bas : demande, suivi, solution.
+
+![Ticket résolu](images/28-ticket-resolu.png)
+
 ## Questions pour l'oral
 
 - **Pourquoi une VM dédiée ?** Un serveur, un rôle : une faille dans GLPI n'expose ni l'annuaire ni un poste utilisateur.
@@ -307,6 +337,8 @@ Aucun mot de passe n'est stocké dans GLPI pour les employés : un changement de
 - **Pourquoi `objectguid` comme champ de synchronisation ?** Il ne change jamais, même si le compte est renommé ou déplacé dans l'annuaire.
 - **Pourquoi une réplique ?** La connexion à GLPI ne dépend plus d'un seul contrôleur de domaine.
 - **Pourquoi le profil Self-Service par défaut ?** Moindre privilège : un employé n'a besoin que de créer et suivre ses tickets.
+- **Quelle différence entre Résolu et Clos ?** Résolu : le technicien a apporté une solution. Clos : le demandeur l'a validée (ou le délai de validation est dépassé). Le ticket ne peut plus évoluer.
+- **Quelle différence entre un suivi et une solution ?** Le suivi trace un échange ou une action en cours ; la solution clôt le traitement et fait passer le ticket en Résolu.
 - **Quelle différence entre inventaire du parc et gestion des tickets ?** Le parc recense ce que l'entreprise possède ; les tickets suivent les incidents et demandes des utilisateurs.
 
 Les mots de passe de la base et du compte LDAP ne sont pas publiés dans ce dépôt.
