@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 3 |
 | **Objectif** | Sauvegarder automatiquement les machines de l'infrastructure et prouver qu'on sait les restaurer |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [TrueNAS](../../Infrastructure/TrueNAS/TrueNAS.md) |
-| **État** | **En cours** : serveur prêt, Veeam Backup & Replication 13.1 en cours d'installation |
+| **État** | **En cours** : Veeam Backup & Replication 13.1 installé (étapes 1 à 5) |
 
 ## Plan
 
@@ -15,7 +15,7 @@
 | 2 | Installer Windows Server 2022 | Réalisé |
 | 3 | Réseau, nom et domaine | Réalisé |
 | 4 | Disque des sauvegardes `V:` en ReFS | Réalisé |
-| 5 | Installer Veeam Backup & Replication 13.1 (Community Edition) | En cours |
+| 5 | Installer Veeam Backup & Replication 13.1 (Community Edition) | Réalisé |
 | 6 | Déclarer le dépôt de sauvegarde | À faire |
 | 7 | Sauvegarder DC01, SRV-GLPI et CLIENT01 | À faire |
 | 8 | Tester les restaurations | À faire |
@@ -143,6 +143,14 @@ L'ISO est montée (double-clic), puis *Setup.exe > Install Veeam Backup & Replic
 | Base de données | PostgreSQL 17, `VeeamBackup` | Configuration, jobs, historique des sauvegardes |
 | Port principal | 443 (HTTPS) | Depuis la v13, tout le trafic Veeam passe chiffré par ce port unique (proxy inverse) |
 | Port API REST | 9419 | Pilotage de Veeam par scripts ou logiciels tiers |
+
+L'installation se termine sans erreur.
+
+![Installation terminée](images/14-installation-terminee.png)
+
+L'ISO est ensuite démontée et supprimée pour libérer 19 Go sur `C:`. La console *Veeam Backup & Replication Console*, créée sur le bureau, se connecte au serveur de sauvegarde local (`localhost`).
+
+![Connexion de la console](images/15-connexion-console.png)
 
 ## Questions pour l'oral
 
