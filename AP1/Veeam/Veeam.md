@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 3 |
 | **Objectif** | Sauvegarder automatiquement les machines de l'infrastructure et prouver qu'on sait les restaurer |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [TrueNAS](../../Infrastructure/TrueNAS/TrueNAS.md) |
-| **État** | **En cours** : serveur de sauvegarde prêt (étapes 1 à 4) |
+| **État** | **En cours** : serveur prêt, Veeam Backup & Replication 13.1 en cours d'installation |
 
 ## Plan
 
@@ -15,7 +15,7 @@
 | 2 | Installer Windows Server 2022 | Réalisé |
 | 3 | Réseau, nom et domaine | Réalisé |
 | 4 | Disque des sauvegardes `V:` en ReFS | Réalisé |
-| 5 | Installer Veeam Backup & Replication 13 (Community Edition) | À faire |
+| 5 | Installer Veeam Backup & Replication 13.1 (Community Edition) | En cours |
 | 6 | Déclarer le dépôt de sauvegarde | À faire |
 | 7 | Sauvegarder DC01, SRV-GLPI et CLIENT01 | À faire |
 | 8 | Tester les restaurations | À faire |
@@ -44,6 +44,7 @@
 | Disque système | 80 Gio, `C:` |
 | Disque des sauvegardes | 100 Gio, `V:` (`Sauvegardes`), ReFS 64 Ko |
 | Réseau | pont `vmbr2`, **VLAN 600**, Intel E1000 |
+| Logiciel | Veeam Backup & Replication **13.1.2.57**, Community Edition |
 | Nom | `srv-veeam.redone.local`, membre du domaine, OU `Serveurs` |
 | Adresse IP | 10.2.81.7/24, passerelle 10.2.81.1 |
 | DNS | 10.2.81.2 (`DC01`), puis 10.2.81.3 (`DC02`) |
@@ -107,10 +108,48 @@ Dans la *Gestion des disques* (`diskmgmt.msc`), le disque 1 est initialisé en *
 
 ![Volume V: Sauvegardes](images/10-disque-sauvegardes.png)
 
+## 6. Installer Veeam Backup & Replication
+
+### Téléchargement et vérification
+
+L'image ISO (18,9 Go) est téléchargée depuis la page officielle de la Community Edition (`veeam.com/fr/products/free/backup-recovery-download.html`), qui ne demande pas de compte. Son empreinte est comparée à celle publiée par Veeam pour s'assurer que le fichier est intact et authentique :
+
+```
+cd $env:USERPROFILE\Downloads
+Get-FileHash .\VeeamBackup*.iso -Algorithm SHA256
+```
+
+L'empreinte obtenue est identique à celle affichée sur la page de téléchargement (`659b…3eae`).
+
+### Assistant d'installation
+
+L'ISO est montée (double-clic), puis *Setup.exe > Install Veeam Backup & Replication*.
+
+**Licence** : aucun fichier de licence, l'édition **Community** (10 instances) s'active d'elle-même.
+
+![Licence Community](images/11-licence.png)
+
+**Emplacements** : le programme reste sur `C:`, tandis que le catalogue des fichiers sauvegardés et le cache de restauration instantanée sont placés par Veeam sur `V:`, le volume le plus spacieux. Le disque système ne contient donc que le logiciel.
+
+![Emplacements des données](images/12-emplacements.png)
+
+**Récapitulatif** : compte de service **LOCAL SYSTEM**, base **PostgreSQL** locale (`VeeamBackup`, port 5432), port principal **443** et API REST **9419**, valeurs par défaut.
+
+![Récapitulatif avant installation](images/13-recapitulatif.png)
+
+| Réglage | Valeur | Rôle |
+| --- | --- | --- |
+| Compte de service | LOCAL SYSTEM | Les services Veeam tournent avec les droits du système local |
+| Base de données | PostgreSQL 17, `VeeamBackup` | Configuration, jobs, historique des sauvegardes |
+| Port principal | 443 (HTTPS) | Depuis la v13, tout le trafic Veeam passe chiffré par ce port unique (proxy inverse) |
+| Port API REST | 9419 | Pilotage de Veeam par scripts ou logiciels tiers |
+
 ## Questions pour l'oral
 
 - **Pourquoi un serveur de sauvegarde dédié ?** Si un serveur de production tombe, ses sauvegardes sont ailleurs et restent disponibles.
 - **Pourquoi un disque séparé pour les sauvegardes ?** Une panne ou une réinstallation du système n'emporte pas les sauvegardes.
 - **Pourquoi ReFS ?** Le Fast Clone accélère les sauvegardes complètes et économise de l'espace.
 - **Qu'est-ce que la règle 3-2-1 ?** 3 copies des données, sur 2 supports différents, dont 1 hors site.
+- **Pourquoi vérifier l'empreinte SHA-256 de l'ISO ?** Pour s'assurer que le fichier n'a été ni corrompu au téléchargement ni modifié : seul un fichier identique à celui de l'éditeur donne la même empreinte.
+- **Pourquoi le logiciel sur `C:` et les données sur `V:` ?** Le disque système reste léger et une réinstallation de Windows n'emporte pas les données de sauvegarde.
 - **Pourquoi tester les restaurations ?** Une sauvegarde qui n'a jamais été restaurée n'est pas une preuve : c'est la restauration qui compte.
