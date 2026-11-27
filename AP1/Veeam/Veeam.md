@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 3 |
 | **Objectif** | Sauvegarder automatiquement les machines de l'infrastructure et prouver qu'on sait les restaurer |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [TrueNAS](../../Infrastructure/TrueNAS/TrueNAS.md) |
-| **État** | **En cours** : Veeam installé, dépôt de sauvegarde prêt (étapes 1 à 6) |
+| **État** | **En cours** : agents déployés sur les machines Windows, job de sauvegarde à créer |
 
 ## Plan
 
@@ -17,7 +17,7 @@
 | 4 | Disque des sauvegardes `V:` en ReFS | Réalisé |
 | 5 | Installer Veeam Backup & Replication 13.1 (Community Edition) | Réalisé |
 | 6 | Déclarer le dépôt de sauvegarde | Réalisé |
-| 7 | Sauvegarder DC01, SRV-GLPI et CLIENT01 | À faire |
+| 7 | Sauvegarder DC01, DC02, CLIENT01 et SRV-GLPI | En cours |
 | 8 | Tester les restaurations | À faire |
 
 ## Veeam en quelques mots
@@ -169,6 +169,39 @@ Le dépôt est de type Windows, hébergé par `SRV-VEEAM.redone.local`, avec une
 
 ![Dépôt de sauvegarde](images/17-depot.png)
 
+## 8. Machines à protéger
+
+Les machines Windows sont regroupées dans un **groupe de protection** (*Inventory > Physical and Cloud Infrastructure > Create Protection Group*). Veeam s'y connecte et y installe lui-même son agent : rien n'est fait à la main sur les machines.
+
+| Réglage | Valeur |
+| --- | --- |
+| Nom | `PG-Serveurs-Windows` |
+| Type | Ordinateurs individuels |
+| Machines | `dc01.redone.local`, `dc02.redone.local`, `client01.redone.local` |
+| Identifiants | `REDONE\Administrateur`, enregistré une fois dans Veeam (*Stored*) |
+
+Les machines sont déclarées par leur **nom DNS**, pas par leur adresse IP : le groupe reste valable si une adresse change.
+
+![Machines du groupe de protection](images/18-groupe-machines.png)
+
+**Dépannage** : au premier test, `client01` échouait alors que les deux contrôleurs de domaine passaient. Le nom était bien résolu (`nslookup` → 10.2.81.10) et le poste bien sur le profil réseau du domaine, mais le **pare-feu de Windows 11** bloque par défaut le partage de fichiers (SMB, partage administratif `ADMIN$` utilisé pour copier l'agent) et le ping. Sur un contrôleur de domaine, ces règles sont ouvertes d'office (SYSVOL, NETLOGON). Le groupe de règles est activé sur le poste par son identifiant, indépendant de la langue de Windows :
+
+```
+Enable-NetFirewallRule -Group "@FirewallAPI.dll,-28502"
+```
+
+Le test de connexion réussit alors sur les trois machines.
+
+![Test de connexion](images/19-test-connexion.png)
+
+Veeam enregistre le groupe et prépare le déploiement.
+
+![Création du groupe](images/20-deploiement.png)
+
+L'agent est **installé** sur les trois machines, toutes en ligne : deux Windows Server 2022 et un Windows 11 25H2.
+
+![Agents installés](images/21-machines-protegees.png)
+
 ## Questions pour l'oral
 
 - **Pourquoi un serveur de sauvegarde dédié ?** Si un serveur de production tombe, ses sauvegardes sont ailleurs et restent disponibles.
@@ -177,4 +210,5 @@ Le dépôt est de type Windows, hébergé par `SRV-VEEAM.redone.local`, avec une
 - **Qu'est-ce que la règle 3-2-1 ?** 3 copies des données, sur 2 supports différents, dont 1 hors site.
 - **Pourquoi vérifier l'empreinte SHA-256 de l'ISO ?** Pour s'assurer que le fichier n'a été ni corrompu au téléchargement ni modifié : seul un fichier identique à celui de l'éditeur donne la même empreinte.
 - **Pourquoi le logiciel sur `C:` et les données sur `V:` ?** Le disque système reste léger et une réinstallation de Windows n'emporte pas les données de sauvegarde.
+- **Pourquoi le déploiement a-t-il d'abord échoué sur le poste client ?** Le pare-feu de Windows 11 bloquait le partage de fichiers utilisé pour copier l'agent. En entreprise, on ouvrirait ces règles sur tous les postes par GPO.
 - **Pourquoi tester les restaurations ?** Une sauvegarde qui n'a jamais été restaurée n'est pas une preuve : c'est la restauration qui compte.
