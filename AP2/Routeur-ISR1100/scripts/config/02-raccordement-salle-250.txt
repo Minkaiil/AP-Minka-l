@@ -1,0 +1,26 @@
+configure terminal
+interface GigabitEthernet0/0/0
+ description ADMIN - reseau de la salle (SSH, journaux, NAT sortant)
+ ip address 192.168.100.250 255.255.255.0
+ exit
+logging source-interface GigabitEthernet0/0/0
+no ntp server 162.159.200.1
+ntp server 10.2.81.2 prefer
+ntp server 192.168.100.1
+ip access-list extended VISITEURS-IN
+ no 40
+ no 50
+ 40 permit udp any host 10.2.81.2 eq domain
+ 45 permit tcp any host 10.2.81.2 eq domain
+ 50 permit udp any host 192.168.100.1 eq domain
+ exit
+ip dhcp pool VISITEURS
+ no dns-server
+ dns-server 10.2.81.2 192.168.100.1
+ exit
+ip dhcp pool VISITEURS-SWITCH
+ no dns-server
+ dns-server 10.2.81.2 192.168.100.1
+ exit
+end
+write memory

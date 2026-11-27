@@ -1,6 +1,38 @@
 # AP 2 - Routeur physique Cisco C1111-8P (R-REDONE)
 
-> État : **en cours**. Configuration complète appliquée (SSH durci, réseau visiteurs isolé avec NAT et DHCP) ; tests sur câble et supervision Zabbix à venir. Retour à l'[AP 2](../README.md).
+> État : **en cours**. Routeur raccordé au réseau de la salle, SSH durci, 8 prises visiteurs avec Internet seul ; tests avec un poste visiteur et supervision Zabbix à venir. Retour à l'[AP 2](../README.md).
+
+## Le projet en bref
+
+RedOne reçoit des visiteurs (prestataires, candidats, clients) qui ont besoin d'Internet. Les brancher sur le réseau de l'entreprise leur donnerait accès aux serveurs : contrôleurs de domaine, fichiers, GLPI, sauvegardes. J'ai donc ajouté un **routeur physique Cisco** qui crée un réseau invité séparé.
+
+```
+                 Internet
+                    |
+          pfSense de la salle 192.168.100.1
+                    |
+   réseau de la salle 192.168.100.0/24 ----- PC d'administration (SSH)
+                    |
+         Gi0/0/0  192.168.100.250   (IP fixe, NAT outside)
+        +---------------------------+
+        |   R-REDONE  C1111-8P      |   NAT, DHCP, ACL VISITEURS-IN
+        +---------------------------+
+         Gi0/0/1            Gi0/1/0 à Gi0/1/7 (switch intégré)
+        10.2.83.1/24        VLAN 620 - 10.2.84.1/24
+             |                       |
+        PC visiteur            8 prises visiteurs
+```
+
+| Besoin | Réponse technique |
+| --- | --- |
+| Internet pour les visiteurs | NAT (PAT) derrière `Gi0/0/0`, route par défaut vers `192.168.100.1` |
+| Aucun accès au réseau interne | ACL `VISITEURS-IN` : DNS et Internet autorisés, toutes les plages privées interdites et journalisées |
+| Branchement sans configuration | DHCP sur le routeur, baux de 4 heures |
+| Traçabilité des connexions (CPCE art. L34-1) | `ip nat log translations syslog` |
+| Administration sécurisée | SSHv2 seul, comptes en scrypt, ACL d'administration, blocage après 3 échecs, bannière légale |
+| Reproductibilité | Configuration complète et scripts PowerShell dans [scripts/](scripts/README.md) |
+
+Toute la configuration a été faite par le câble console, depuis PowerShell, sans PuTTY : voir les [scripts](scripts/README.md).
 
 ## Objectif
 
@@ -9,8 +41,6 @@ Ajouter un routeur physique à l'infrastructure RedOne pour :
 - router entre les VLAN (serveurs, utilisateurs, visiteurs, administration) ;
 - offrir un **accès Internet aux visiteurs**, sans aucun accès au réseau interne ;
 - n'être administré qu'en **SSH**, jamais en Telnet.
-
-Cette page couvre la première étape : la prise en main du routeur et la mise en place de l'accès SSH.
 
 ## Matériel et valeurs
 
@@ -24,7 +54,7 @@ Cette page couvre la première étape : la prise en main du routeur et la mise e
 | Domaine | `redone.local` |
 | IP d'administration SSH et sortie Internet | `192.168.100.250/24` sur `Gi0/0/0` (NAT outside), passerelle `192.168.100.1` |
 | Visiteurs, port routé | `10.2.83.1/24` sur `Gi0/0/1` |
-| Visiteurs, prises du switch | VLAN 620, `10.2.84.1/24`, ports `Gi0/1/0` à `Gi0/1/3` |
+| Visiteurs, prises du switch | VLAN 620, `10.2.84.1/24`, ports `Gi0/1/0` à `Gi0/1/7` |
 | Compte d'administration | `admin-minka` (privilège 15) |
 | Câble console | USB-série CH340, port `COM5`, 9600 bauds, 8N1 |
 
@@ -37,7 +67,7 @@ Le switch intégré permet de tout faire dans un seul boîtier : pas besoin de s
 | 600 Serveurs (existant) | 10.2.81.0/24 | AD, DNS, GLPI, TrueNAS, Veeam | Inchangé |
 | 610 Utilisateurs | 10.2.82.0/24 | Postes des employés | Serveurs et Internet |
 | Visiteurs (port routé `Gi0/0/1`) | 10.2.83.0/24 | Prise invités | Internet seulement |
-| 620 Visiteurs (prises du switch) | 10.2.84.0/24 | Prises invités `Gi0/1/0-3` | Internet seulement |
+| 620 Visiteurs (prises du switch) | 10.2.84.0/24 | Prises invités `Gi0/1/0-7` | Internet seulement |
 | 699 Administration | 10.2.100.0/24 | Gestion du routeur | Admins seulement |
 
 Le DHCP du VLAN 600 reste assuré par le pfSense de la classe. Les visiteurs recevront leur adresse du routeur lui-même.
@@ -196,6 +226,34 @@ Host r-redone 192.168.100.250
 
 La connexion se fait ensuite avec `ssh r-redone`. La vraie correction serait une mise à jour d'IOS-XE (17.x), qui apporte des échanges de clés ECDH.
 
+## Étape 7 - Les 8 prises du switch pour les visiteurs
+
+Les 8 ports du switch intégré passent dans le VLAN 620. Tout appareil branché sur n'importe quelle prise reçoit une adresse en `10.2.84.x` et n'a accès qu'à Internet.
+
+```
+interface range GigabitEthernet0/1/0 - 7
+ description VISITEURS - prise visiteur (VLAN 620)
+ switchport mode access
+ switchport access vlan 620
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+```
+
+`portfast` donne l'accès au réseau tout de suite au branchement. `bpduguard` coupe la prise si un visiteur y branche un switch, ce qui protège contre les boucles.
+
+![8 prises visiteurs en VLAN 620](images/11-tous-ports-visiteurs.png)
+
+## IP fixe ou DHCP ?
+
+| Élément | Type | Pourquoi |
+| --- | --- | --- |
+| Routeur, `Gi0/0/0` = `192.168.100.250` | **IP fixe** (`Method manual`) | Un équipement réseau doit garder la même adresse : on s'y connecte en SSH et elle sert de passerelle aux visiteurs |
+| Routeur, `Gi0/0/1` = `10.2.83.1` et `Vlan620` = `10.2.84.1` | **IP fixe** | Ce sont les passerelles des visiteurs |
+| Postes des visiteurs | **DHCP**, distribué par le routeur | Le visiteur se branche sans rien configurer |
+
+Pour le vérifier : `show ip interface brief`, colonne `Method`. `manual` signifie une IP fixe, `DHCP` une IP reçue d'un serveur DHCP. Toutes les commandes de vérification sont dans [scripts/config/verifications.txt](scripts/config/verifications.txt).
+
 ## Vérifications
 
 ![Vérification SSH](images/04-verification-ssh.png)
@@ -211,7 +269,7 @@ La connexion se fait ensuite avec `ssh r-redone`. La vraie correction serait une
 | `ping 192.168.100.1`, `ping 8.8.8.8`, `ping 10.2.81.2` depuis le routeur | 100 % de réussite | OK |
 | `show ntp associations` | Synchronisé sur `192.168.100.1` | OK |
 | `ssh r-redone` depuis un PC en 192.168.100.x | Bannière puis demande du mot de passe | OK (négociation) |
-| PC sur une prise `Gi0/1/0-3` | Adresse en 10.2.84.x, navigation Internet | À faire |
+| PC sur une prise `Gi0/1/0-7` | Adresse en 10.2.84.x, navigation Internet | À faire |
 | Même PC vers `10.2.81.2` (DC01) | Bloqué par `VISITEURS-IN` | À faire |
 | `show ip nat translations` | Traductions des visiteurs | À faire |
 | Supervision Zabbix en SNMPv3 | Hôte R-REDONE disponible | À faire |

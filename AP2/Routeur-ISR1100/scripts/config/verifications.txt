@@ -1,0 +1,47 @@
+! =====================================================================
+! R-REDONE - commandes de vérification (à taper en SSH ou en console, mode R-REDONE#)
+! =====================================================================
+!
+! --- Adresses et état des interfaces ---
+show ip interface brief
+!   Colonne "Method" : manual = IP fixe, DHCP = IP reçue par DHCP
+show running-config interface GigabitEthernet0/0/0
+show interfaces GigabitEthernet0/0/0 | include line protocol|Duplex|packets
+!
+! --- Passerelle et routes ---
+show ip route
+!   "Gateway of last resort is 192.168.100.1" = passerelle par défaut
+show ip route static
+show arp
+!   192.168.100.1 doit avoir une adresse MAC (pas "Incomplete")
+!
+! --- Tests de joignabilité ---
+ping 192.168.100.1
+ping 8.8.8.8
+ping 10.2.81.2
+traceroute 8.8.8.8
+!
+! --- Visiteurs : DHCP, ports, NAT, filtrage ---
+show ip dhcp pool
+show ip dhcp binding
+show interfaces status
+show vlan-switch
+show ip nat translations
+show ip nat statistics
+show ip access-lists VISITEURS-IN
+!   Les compteurs "matches" montrent ce qui a été autorisé ou bloqué
+!
+! --- Sécurité et administration ---
+show ip ssh
+show ip access-lists ADMIN-SSH
+show login
+show users
+show logging | include SSH|LOGIN|SEC
+!
+! --- Heure ---
+show clock
+show ntp associations
+!
+! --- Configuration enregistrée ---
+show startup-config | include ip address|login local
+show archive log config all

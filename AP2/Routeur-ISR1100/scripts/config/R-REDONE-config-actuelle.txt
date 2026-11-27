@@ -1,0 +1,171 @@
+! =====================================================================
+! R-REDONE (Cisco C1111-8P, IOS-XE 16.12.04) - configuration actuelle
+! Sans aucun secret : les mots de passe et clés sont saisis par config-partie-B.ps1.
+! =====================================================================
+enable
+configure terminal
+!
+! --- 1. Identité, heure, mots de passe ---
+hostname R-REDONE
+ip domain name redone.local
+clock timezone CET 1 0
+clock summer-time CEST recurring last Sun Mar 2:00 last Sun Oct 3:00
+service timestamps log datetime msec localtime show-timezone
+service timestamps debug datetime msec localtime show-timezone
+service password-encryption
+security passwords min-length 12
+! username admin-minka privilege 15 algorithm-type scrypt secret <saisi par config-partie-B.ps1>
+! enable algorithm-type scrypt secret <saisi par config-partie-B.ps1>
+!
+! --- 2. Services inutiles coupés ---
+no ip http server
+no ip http secure-server
+no ip domain lookup
+no service pad
+no ip source-route
+no cdp run
+!
+! --- 3. SSH v2, administration depuis le réseau de la salle ---
+crypto key generate rsa modulus 2048
+ip ssh version 2
+ip ssh time-out 60
+ip ssh authentication-retries 3
+ip ssh server algorithm mac hmac-sha2-256 hmac-sha2-512
+ip ssh server algorithm encryption aes256-ctr aes192-ctr aes128-ctr
+ip access-list standard ADMIN-SSH
+ 10 permit 192.168.100.0 0.0.0.255
+ 20 deny any log
+ exit
+login block-for 120 attempts 3 within 60
+login quiet-mode access-class ADMIN-SSH
+login on-failure log
+login on-success log
+line con 0
+ exec-timeout 5 0
+ logging synchronous
+ login local
+ exit
+line vty 0 4
+ access-class ADMIN-SSH in
+ exec-timeout 5 0
+ transport input ssh
+ login local
+ exit
+banner login % ACCES RESERVE - RedOne. Equipement a usage professionnel. Toute connexion est journalisee. Acces non autorise interdit (art. 323-1 du Code penal). %
+archive
+ log config
+  logging enable
+  notify syslog contenttype plaintext
+  hidekeys
+  exit
+ exit
+!
+! --- 4. Interface d'administration et sortie Internet (réseau de la salle) ---
+interface Vlan1
+ no ip address
+ shutdown
+ exit
+interface GigabitEthernet0/0/0
+ description ADMIN - reseau de la salle (SSH, journaux, NAT sortant)
+ ip address 192.168.100.250 255.255.255.0
+ ip nat outside
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no shutdown
+ exit
+ip route 0.0.0.0 0.0.0.0 192.168.100.1
+!
+! --- 5. Journaux ---
+logging source-interface GigabitEthernet0/0/0
+logging trap informational
+logging buffered 64000 informational
+logging console warnings
+!
+! --- 6. SNMP (supervision Zabbix à compléter) ---
+snmp-server view LECTURE iso included
+snmp-server location Salle de cours - labo redone.local
+snmp-server contact Minkail - Reseau et Systeme
+snmp-server ifindex persist
+!
+! --- 7. Heure : DC01 en priorité ---
+ntp server 10.2.81.2 prefer
+ntp server 192.168.100.1
+ntp source GigabitEthernet0/0/0
+!
+! --- 8. ACL d'isolement des visiteurs (DNS + Internet uniquement) ---
+ip access-list extended VISITEURS-IN
+ 10 permit udp any any eq bootps
+ 20 permit icmp any host 10.2.83.1 echo
+ 30 permit icmp any host 10.2.84.1 echo
+ 40 permit udp any host 10.2.81.2 eq domain
+ 45 permit tcp any host 10.2.81.2 eq domain
+ 50 permit udp any host 192.168.100.1 eq domain
+ 60 deny ip any 10.0.0.0 0.255.255.255 log
+ 70 deny ip any 172.16.0.0 0.15.255.255 log
+ 80 deny ip any 192.168.0.0 0.0.255.255 log
+ 90 permit ip any any
+ exit
+!
+! --- 9. Visiteurs sur le port routé Gi0/0/1 : 10.2.83.0/24 ---
+interface GigabitEthernet0/0/1
+ description VISITEURS - Internet seulement (NAT), isole du reseau redone.local
+ ip address 10.2.83.1 255.255.255.0
+ ip nat inside
+ ip access-group VISITEURS-IN in
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no shutdown
+ exit
+ip dhcp excluded-address 10.2.83.1 10.2.83.19
+ip dhcp pool VISITEURS
+ network 10.2.83.0 255.255.255.0
+ default-router 10.2.83.1
+ dns-server 10.2.81.2 192.168.100.1
+ domain-name invites.redone.local
+ lease 0 4
+ exit
+!
+! --- 10. Visiteurs sur les 8 prises du switch : VLAN 620, 10.2.84.0/24 ---
+vlan 620
+ name VISITEURS
+ exit
+interface Vlan620
+ description VISITEURS (prises du switch) - Internet seulement (NAT), isole du reseau redone.local
+ ip address 10.2.84.1 255.255.255.0
+ ip nat inside
+ ip access-group VISITEURS-IN in
+ no ip redirects
+ no ip unreachables
+ no ip proxy-arp
+ no shutdown
+ exit
+interface range GigabitEthernet0/1/0 - 7
+ description VISITEURS - prise visiteur (VLAN 620)
+ switchport mode access
+ switchport access vlan 620
+ spanning-tree portfast
+ spanning-tree bpduguard enable
+ no shutdown
+ exit
+ip dhcp excluded-address 10.2.84.1 10.2.84.19
+ip dhcp pool VISITEURS-SWITCH
+ network 10.2.84.0 255.255.255.0
+ default-router 10.2.84.1
+ dns-server 10.2.81.2 192.168.100.1
+ domain-name invites.redone.local
+ lease 0 4
+ exit
+!
+! --- 11. NAT des visiteurs + journal des connexions (CPCE art. L34-1) ---
+ip access-list standard NAT-VISITEURS
+ permit 10.2.83.0 0.0.0.255
+ permit 10.2.84.0 0.0.0.255
+ exit
+ip nat inside source list NAT-VISITEURS interface GigabitEthernet0/0/0 overload
+ip nat log translations syslog
+!
+config-register 0x2102
+end
+write memory
