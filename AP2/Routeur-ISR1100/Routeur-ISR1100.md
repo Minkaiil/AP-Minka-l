@@ -22,7 +22,7 @@ Cette page couvre la première étape : la prise en main du routeur et la mise e
 | Switch intégré | 8 ports, `Gi0/1/0` à `Gi0/1/7` |
 | Nom d'hôte | `R-REDONE` |
 | Domaine | `redone.local` |
-| IP d'administration SSH et sortie Internet | `192.168.100.50/24` sur `Gi0/0/0` (NAT outside), passerelle `192.168.100.1` |
+| IP d'administration SSH et sortie Internet | `192.168.100.250/24` sur `Gi0/0/0` (NAT outside), passerelle `192.168.100.1` |
 | Visiteurs, port routé | `10.2.83.1/24` sur `Gi0/0/1` |
 | Visiteurs, prises du switch | VLAN 620, `10.2.84.1/24`, ports `Gi0/1/0` à `Gi0/1/3` |
 | Compte d'administration | `admin-minka` (privilège 15) |
@@ -135,7 +135,7 @@ La configuration finale reprend celle d'un collègue, adaptée à mon infrastruc
 
 | Bloc | Contenu |
 |---|---|
-| Identité et heure | Fuseau CET/CEST, horodatage des journaux, NTP `192.168.100.1` |
+| Identité et heure | Fuseau CET/CEST, horodatage des journaux, NTP DC01 `10.2.81.2` (prioritaire) puis `192.168.100.1` |
 | Mots de passe | `security passwords min-length 12`, compte `admin-minka` et `enable` en scrypt, `service password-encryption` |
 | Services coupés | `no ip http server`, `no cdp run`, `no service pad`, `no ip source-route` |
 | SSH | ACL `ADMIN-SSH` (192.168.100.0/24 seulement), `login block-for 120 attempts 3 within 60`, journalisation des connexions, `exec-timeout 5 0` |
@@ -143,7 +143,7 @@ La configuration finale reprend celle d'un collègue, adaptée à mon infrastruc
 | Traçabilité | Bannière légale (art. 323-1 du Code pénal), `archive log config` avec `hidekeys`, journal de 64 ko |
 | Visiteurs | Deux réseaux isolés : `Gi0/0/1` en 10.2.83.0/24 et VLAN 620 en 10.2.84.0/24 (prises `Gi0/1/0-3`, `portfast`, `bpduguard`) |
 | DHCP visiteurs | Pools `VISITEURS` et `VISITEURS-SWITCH`, baux de 4 h, 19 premières adresses exclues |
-| Filtrage visiteurs | ACL `VISITEURS-IN` : DHCP, ping de la passerelle, DNS de la salle, puis **tout réseau privé interdit** (10/8, 172.16/12, 192.168/16) et Internet autorisé |
+| Filtrage visiteurs | ACL `VISITEURS-IN` : DHCP, ping de la passerelle, DNS de DC01 (`10.2.81.2`) et de la salle, puis **tout réseau privé interdit** (10/8, 172.16/12, 192.168/16) et Internet autorisé |
 | NAT | PAT des deux réseaux visiteurs derrière `Gi0/0/0`, avec `ip nat log translations syslog` (traçabilité des connexions, CPCE art. L34-1) |
 | SNMP | Vue `LECTURE` préparée ; groupe et utilisateur SNMPv3 pour Zabbix à ajouter |
 
@@ -154,6 +154,47 @@ L'ancien compte `admin` et l'ancienne ACL `ACL-SSH-ADMIN` ont été supprimés, 
 ![Vérification de la configuration complète](images/07-verification-config-complete.png)
 
 ![Console protégée par login et bannière](images/08-console-login-banniere.png)
+
+## Étape 6 - Raccordement au réseau de la salle
+
+L'adresse `192.168.100.50` était déjà utilisée par une autre machine (réponse avec un TTL de 64 et une adresse MAC de VM Proxmox `bc:24:11`, alors qu'un Cisco répond avec un TTL de 255). Le routeur passe donc en `192.168.100.250`, une adresse libre vérifiée par ping.
+
+```
+interface GigabitEthernet0/0/0
+ ip address 192.168.100.250 255.255.255.0
+logging source-interface GigabitEthernet0/0/0
+ntp server 10.2.81.2 prefer
+ntp server 192.168.100.1
+ip access-list extended VISITEURS-IN
+ 40 permit udp any host 10.2.81.2 eq domain
+ 45 permit tcp any host 10.2.81.2 eq domain
+ 50 permit udp any host 192.168.100.1 eq domain
+ip dhcp pool VISITEURS
+ dns-server 10.2.81.2 192.168.100.1
+ip dhcp pool VISITEURS-SWITCH
+ dns-server 10.2.81.2 192.168.100.1
+```
+
+Premier essai : le port avait du lien mais l'ARP vers `192.168.100.1` restait `Incomplete`. Le câble n'arrivait pas sur le réseau de la salle. Une fois rebranché sur le bon switch, la passerelle, Internet, DC01 et le NTP répondent.
+
+![IP .250, NTP et DNS vers DC01](images/09-ip-250-ntp-dns-dc01.png)
+
+![Passerelle, Internet, DC01 et NTP joignables](images/10-acces-salle-internet.png)
+
+### Connexion SSH depuis Windows
+
+IOS-XE 16.12.04 ne propose que des échanges de clés SHA-1 (`diffie-hellman-group14-sha1`). Le client OpenSSH de Windows les refuse par défaut : le routeur journalise `%SSH-3-NO_MATCH: No matching kex algorithm found`. La commande `ip ssh server algorithm kex ecdh-...` n'existe pas dans cette version. On autorise donc SHA-1 côté client, pour ce routeur uniquement, dans `%USERPROFILE%\.ssh\config` :
+
+```
+Host r-redone 192.168.100.250
+    HostName 192.168.100.250
+    User admin-minka
+    KexAlgorithms +diffie-hellman-group14-sha1
+    HostKeyAlgorithms +ssh-rsa
+    PubkeyAcceptedAlgorithms +ssh-rsa
+```
+
+La connexion se fait ensuite avec `ssh r-redone`. La vraie correction serait une mise à jour d'IOS-XE (17.x), qui apporte des échanges de clés ECDH.
 
 ## Vérifications
 
@@ -167,7 +208,9 @@ L'ancien compte `admin` et l'ancienne ACL `ACL-SSH-ADMIN` ont été supprimés, 
 | `show ip access-lists ADMIN-SSH` | 192.168.100.0/24 autorisé, reste refusé et journalisé | OK |
 | `show ip dhcp pool` | Pools `VISITEURS` et `VISITEURS-SWITCH` | OK |
 | Console | Bannière puis `Username:` | OK |
-| `ssh admin-minka@192.168.100.50` depuis un PC en 192.168.100.x | Bannière puis invite `R-REDONE#` | À faire (câble) |
+| `ping 192.168.100.1`, `ping 8.8.8.8`, `ping 10.2.81.2` depuis le routeur | 100 % de réussite | OK |
+| `show ntp associations` | Synchronisé sur `192.168.100.1` | OK |
+| `ssh r-redone` depuis un PC en 192.168.100.x | Bannière puis demande du mot de passe | OK (négociation) |
 | PC sur une prise `Gi0/1/0-3` | Adresse en 10.2.84.x, navigation Internet | À faire |
 | Même PC vers `10.2.81.2` (DC01) | Bloqué par `VISITEURS-IN` | À faire |
 | `show ip nat translations` | Traductions des visiteurs | À faire |
