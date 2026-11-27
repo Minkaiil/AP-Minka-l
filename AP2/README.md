@@ -1,6 +1,6 @@
 # AP 2 - Interconnexion Proxmox et switchs physiques : la segmentation de bout en bout
 
-> État : **à venir**.
+> État : **en cours**.
 
 ## Contexte
 
@@ -57,7 +57,7 @@ interface <port_poste>
 
 ### 3. Routage et filtrage entre VLAN
 
-- Définir où se fait le routage inter-VLAN : [ÉQUIPEMENT].
+- Définir où se fait le routage inter-VLAN : routeur physique Cisco C1111-8P `R-REDONE` (router-on-a-stick et switch intégré de 8 ports).
 - Écrire les règles de filtrage entre zones (utilisateurs, serveurs, visiteurs, sortie).
 
 ### 4. Tests et preuves
@@ -78,4 +78,7 @@ interface <port_poste>
 
 ## Réalisations
 
-[ÉTAPES_ET_PREUVES_AP2]
+| # | Chantier | Page | État |
+| --- | --- | --- | --- |
+| 1 | Routeur Cisco C1111-8P : prise en main et accès SSH | [Routeur-ISR1100](Routeur-ISR1100/Routeur-ISR1100.md) | En cours |
+| 2 | VLAN utilisateurs, visiteurs (Internet seul) et administration | à venir | À venir |

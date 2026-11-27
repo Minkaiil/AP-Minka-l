@@ -29,7 +29,8 @@ Le travail se fait en trois temps :
 | AP 1 | Partages des services et lecteur S: par GPO | [Partages-Services](AP1/Partages-Services/Partages-Services.md) | Réalisé |
 | AP 1 | GLPI | [GLPI](AP1/GLPI/GLPI.md) | Réalisé |
 | AP 1 | Sauvegarde Veeam | [Veeam](AP1/Veeam/Veeam.md) | En cours |
-| AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | À venir |
+| AP 2 | Segmentation de bout en bout | [AP 2](AP2/README.md) | En cours |
+| AP 2 | Routeur Cisco C1111-8P et accès SSH | [Routeur-ISR1100](AP2/Routeur-ISR1100/Routeur-ISR1100.md) | En cours |
 
 ## TP de cours
 
