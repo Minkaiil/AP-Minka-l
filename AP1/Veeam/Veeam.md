@@ -5,7 +5,7 @@
 | **Atelier** | AP 1, chantier 3 |
 | **Objectif** | Sauvegarder automatiquement les machines de l'infrastructure et prouver qu'on sait les restaurer |
 | **Prérequis** | [Active Directory et DNS](../../Infrastructure/Active-Directory/Active-Directory.md), [TrueNAS](../../Infrastructure/TrueNAS/TrueNAS.md) |
-| **État** | **En cours** : Veeam Backup & Replication 13.1 installé (étapes 1 à 5) |
+| **État** | **En cours** : Veeam installé, dépôt de sauvegarde prêt (étapes 1 à 6) |
 
 ## Plan
 
@@ -16,7 +16,7 @@
 | 3 | Réseau, nom et domaine | Réalisé |
 | 4 | Disque des sauvegardes `V:` en ReFS | Réalisé |
 | 5 | Installer Veeam Backup & Replication 13.1 (Community Edition) | Réalisé |
-| 6 | Déclarer le dépôt de sauvegarde | À faire |
+| 6 | Déclarer le dépôt de sauvegarde | Réalisé |
 | 7 | Sauvegarder DC01, SRV-GLPI et CLIENT01 | À faire |
 | 8 | Tester les restaurations | À faire |
 
@@ -151,6 +151,23 @@ L'installation se termine sans erreur.
 L'ISO est ensuite démontée et supprimée pour libérer 19 Go sur `C:`. La console *Veeam Backup & Replication Console*, créée sur le bureau, se connecte au serveur de sauvegarde local (`localhost`).
 
 ![Connexion de la console](images/15-connexion-console.png)
+
+## 7. Dépôt de sauvegarde
+
+À l'installation, Veeam a créé un dépôt par défaut sur le plus grand volume, `V:\Backup`. Il est conservé plutôt que d'en créer un second sur le même disque, et renommé pour être identifiable (*Backup Infrastructure > Backup Repositories > Properties*) :
+
+| Réglage | Valeur |
+| --- | --- |
+| Nom | `Depot-SRV-VEEAM-V` |
+| Description | Disque V: ReFS, sauvegardes des serveurs redone.local |
+| Chemin | `V:\Backup` |
+| Tâches simultanées | 4 au maximum (valeur par défaut), pour ne pas saturer le disque |
+
+![Chemin du dépôt](images/16-depot-chemin.png)
+
+Le dépôt est de type Windows, hébergé par `SRV-VEEAM.redone.local`, avec une capacité de 99,9 Go dont 98,8 Go libres. Le volume étant en ReFS, Veeam utilise le Fast Clone.
+
+![Dépôt de sauvegarde](images/17-depot.png)
 
 ## Questions pour l'oral
 
