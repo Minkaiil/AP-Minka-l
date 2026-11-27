@@ -22,7 +22,8 @@ Cette page couvre la première étape : la prise en main du routeur et la mise e
 | Switch intégré | 8 ports, `Gi0/1/0` à `Gi0/1/7` |
 | Nom d'hôte | `R-REDONE` |
 | Domaine | `redone.local` |
-| IP d'administration | `10.2.100.1/24` sur `Gi0/0/1` (réseau du futur VLAN 699) |
+| IP d'administration SSH | `192.168.100.50/24` sur `Gi0/0/0` |
+| IP d'administration (future) | `10.2.100.1/24` sur `Gi0/0/1` (réseau du futur VLAN 699) |
 | Câble console | USB-série CH340, port `COM5`, 9600 bauds, 8N1 |
 
 Le switch intégré permet de tout faire dans un seul boîtier : pas besoin de switch supplémentaire pour les prises visiteurs.
@@ -100,6 +101,28 @@ Les mots de passe sont stockés en **type 9 (scrypt)**, le hachage le plus robus
 
 ![Comptes chiffrés en scrypt](images/03-comptes-scrypt.png)
 
+## Étape 4 - Adresse d'administration et filtrage SSH
+
+Le routeur est joignable en SSH sur le réseau `192.168.100.0/24`, depuis un autre poste. L'accès est filtré par une ACL standard posée sur les lignes VTY : seuls ce réseau et le futur réseau d'administration peuvent ouvrir une session, les autres tentatives sont refusées et journalisées.
+
+```
+ip access-list standard ACL-SSH-ADMIN
+ remark Postes autorises a administrer R-REDONE en SSH
+ 10 permit 192.168.100.0 0.0.0.255
+ 20 permit 10.2.100.0 0.0.0.255
+ 30 deny   any log
+line vty 0 4
+ access-class ACL-SSH-ADMIN in
+interface GigabitEthernet0/0/0
+ description ADMIN-SSH - reseau 192.168.100.0/24
+ ip address 192.168.100.50 255.255.255.0
+ no shutdown
+```
+
+J'ai d'abord essayé `ip address dhcp` sur `Gi0/0/0`, mais aucun serveur DHCP n'a répondu sur ce lien (bail `0.0.0.0`, état « Purging »). J'ai donc choisi une adresse fixe, plus simple à retenir pour se connecter en SSH.
+
+![IP d'administration et ACL SSH](images/05-ip-admin-acl-ssh.png)
+
 ## Vérifications
 
 ![Vérification SSH](images/04-verification-ssh.png)
@@ -109,7 +132,8 @@ Les mots de passe sont stockés en **type 9 (scrypt)**, le hachage le plus robus
 | `show ip ssh` | `SSH Enabled - version 2.0` | OK |
 | `show running-config \| section line vty` | `transport input ssh`, `login local` | OK |
 | Mots de passe en type 9 | `secret 9 ...` | OK |
-| `ssh admin@10.2.100.1` depuis un PC en 10.2.100.10/24 | Invite `R-REDONE#` | À faire |
+| `show ip access-lists ACL-SSH-ADMIN` | 192.168.100.0/24 et 10.2.100.0/24 autorisés | OK |
+| `ssh admin@192.168.100.50` depuis un PC en 192.168.100.x | Invite `R-REDONE#` | À faire |
 
 ## Points à justifier à l'oral
 
